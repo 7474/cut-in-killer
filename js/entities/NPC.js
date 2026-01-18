@@ -152,18 +152,18 @@ class NPC extends Entity {
             if (newY >= track.minY && newY <= track.maxY) {
                 // We're in or entering a track area - redirect movement
                 
-                // Determine which side of the track is closer to target
+                // Determine which side of the track is closer
                 const distToTop = Math.abs(this.y - track.minY);
                 const distToBottom = Math.abs(this.y - track.maxY);
                 
                 // If already on track, push towards nearest edge
                 if (this.y >= track.minY && this.y <= track.maxY) {
                     if (distToTop < distToBottom) {
-                        // Push towards top (away from track)
-                        moveY = Math.min(moveY, -(track.minY - this.y + 2));
+                        // Push towards top (away from track, negative Y direction)
+                        moveY = Math.min(moveY, track.minY - this.y - 2);
                     } else {
-                        // Push towards bottom (away from track)
-                        moveY = Math.max(moveY, (track.maxY - this.y + 2));
+                        // Push towards bottom (away from track, positive Y direction)
+                        moveY = Math.max(moveY, track.maxY - this.y + 2);
                     }
                 } else {
                     // Prevent entering track - stop Y movement
