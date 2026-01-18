@@ -5,10 +5,15 @@ class Train extends Entity {
         super(x, y);
         this.width = 40;   // Narrow (horizontal, perpendicular to movement)
         
-        // Multi-car train configuration
-        this.carCount = Utils.randomInt(3, 6); // Random number of cars: 3-6
-        this.carLength = 80; // Length of each car (80 pixels each, vs previous fixed 150 total)
-        this.carGap = 8; // Gap between cars
+        // Multi-car train configuration constants
+        const MIN_CARS = 3;
+        const MAX_CARS = 6;
+        const CAR_LENGTH = 80;
+        const CAR_GAP = 8;
+        
+        this.carCount = Utils.randomInt(MIN_CARS, MAX_CARS); // Random number of cars
+        this.carLength = CAR_LENGTH; // Length of each car (80 pixels each, vs previous fixed 150 total)
+        this.carGap = CAR_GAP; // Gap between cars
         this.WINDOWS_PER_CAR = 3; // Windows per car
         this.DOORS_PER_CAR = 2; // Doors per car
         this.height = this.carCount * this.carLength + (this.carCount - 1) * this.carGap; // Total train length
