@@ -13,10 +13,17 @@ class Train extends Entity {
         this.targetY = y; // Target Y position (stopped at platform)
         this.startY = y + 200; // Start from bottom (below screen)
         this.y = this.startY;
-        this.endY = y - 200; // Exit to top
+        this.endY = -this.height / 2 - 10; // Exit completely off top of screen
         this.passengers = [];
         this.hasUnloaded = false;
         this.DOOR_CLEARANCE = 15; // Space between train doors and NPC spawn position
+        
+        // Calculate durations to maintain consistent speed
+        const ARRIVAL_DISTANCE = Math.abs(this.targetY - this.startY);
+        const ARRIVAL_DURATION = 1.5; // seconds
+        this.TRAIN_SPEED = ARRIVAL_DISTANCE / ARRIVAL_DURATION; // pixels per second
+        this.arrivalDuration = ARRIVAL_DURATION;
+        this.departingDuration = Math.abs(this.targetY - this.endY) / this.TRAIN_SPEED;
     }
 
     generatePassengers() {
@@ -40,9 +47,9 @@ class Train extends Entity {
         
         if (this.state === 'arriving') {
             // Move train from bottom to platform position
-            this.y = Utils.lerp(this.startY, this.targetY, Math.min(this.timer / 1.5, 1));
+            this.y = Utils.lerp(this.startY, this.targetY, Math.min(this.timer / this.arrivalDuration, 1));
             
-            if (this.timer >= 1.5) {
+            if (this.timer >= this.arrivalDuration) {
                 this.state = 'stopped';
                 this.timer = 0;
                 
@@ -57,10 +64,10 @@ class Train extends Entity {
                 this.timer = 0;
             }
         } else if (this.state === 'departing') {
-            // Move train from platform to top (pass through)
-            this.y = Utils.lerp(this.targetY, this.endY, Math.min(this.timer / 1.5, 1));
+            // Move train from platform to top (pass through and exit off-screen)
+            this.y = Utils.lerp(this.targetY, this.endY, Math.min(this.timer / this.departingDuration, 1));
             
-            if (this.timer >= 1.5) {
+            if (this.timer >= this.departingDuration) {
                 this.active = false;
             }
         }
