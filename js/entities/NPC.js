@@ -19,6 +19,7 @@ class NPC extends Entity {
         // AI properties
         this.pathUpdateTimer = 0;
         this.pathUpdateInterval = 0.5; // Update path every 0.5 seconds
+        this.queueOffset = null; // Cache queue position to avoid jittery movement
     }
 
     setTarget(target) {
@@ -55,9 +56,12 @@ class NPC extends Entity {
             
             if (this.type === 'good') {
                 // Good NPCs: Form a queue line approaching the escalator
-                const queueOffset = this.getQueueLinePosition(npcs);
-                targetX = this.target.x + queueOffset.x;
-                targetY = this.target.y + queueOffset.y;
+                // Cache the queue offset to avoid recalculating every frame
+                if (!this.queueOffset) {
+                    this.queueOffset = this.getQueueLinePosition(npcs);
+                }
+                targetX = this.target.x + this.queueOffset.x;
+                targetY = this.target.y + this.queueOffset.y;
             } else {
                 // Bad NPCs: Take shortest path directly to escalator
                 targetX = this.target.x;
@@ -143,8 +147,10 @@ class NPC extends Entity {
         }
         
         // Position in queue line extending away from escalator
+        // Use a consistent offset based on initial X position relative to escalator
+        const xOffsetSign = this.x > this.target.x ? 1 : -1;
         const queueOffset = {
-            x: Utils.randomFloat(-queueWidth / 2, queueWidth / 2),
+            x: xOffsetSign * (queueWidth / 2),
             y: queueDistance * (npcsAhead + 1)
         };
         
