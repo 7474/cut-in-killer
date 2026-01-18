@@ -93,8 +93,9 @@ class Game {
             e.preventDefault();
             const touch = e.touches[0];
             const rect = this.canvas.getBoundingClientRect();
-            this.touchX = touch.clientX - rect.left;
-            this.touchY = touch.clientY - rect.top;
+            // Scale coordinates from CSS size to canvas internal size
+            this.touchX = (touch.clientX - rect.left) * (this.canvas.width / rect.width);
+            this.touchY = (touch.clientY - rect.top) * (this.canvas.height / rect.height);
             this.touchActive = true;
             this.handleAttack();
         });
@@ -103,8 +104,9 @@ class Game {
             e.preventDefault();
             const touch = e.touches[0];
             const rect = this.canvas.getBoundingClientRect();
-            this.touchX = touch.clientX - rect.left;
-            this.touchY = touch.clientY - rect.top;
+            // Scale coordinates from CSS size to canvas internal size
+            this.touchX = (touch.clientX - rect.left) * (this.canvas.width / rect.width);
+            this.touchY = (touch.clientY - rect.top) * (this.canvas.height / rect.height);
         });
 
         this.canvas.addEventListener('touchend', (e) => {
@@ -115,8 +117,9 @@ class Game {
         // Mouse events for desktop testing
         this.canvas.addEventListener('mousedown', (e) => {
             const rect = this.canvas.getBoundingClientRect();
-            this.touchX = e.clientX - rect.left;
-            this.touchY = e.clientY - rect.top;
+            // Scale coordinates from CSS size to canvas internal size
+            this.touchX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+            this.touchY = (e.clientY - rect.top) * (this.canvas.height / rect.height);
             this.touchActive = true;
             this.handleAttack();
         });
@@ -124,8 +127,9 @@ class Game {
         this.canvas.addEventListener('mousemove', (e) => {
             if (this.touchActive) {
                 const rect = this.canvas.getBoundingClientRect();
-                this.touchX = e.clientX - rect.left;
-                this.touchY = e.clientY - rect.top;
+                // Scale coordinates from CSS size to canvas internal size
+                this.touchX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+                this.touchY = (e.clientY - rect.top) * (this.canvas.height / rect.height);
             }
         });
 
