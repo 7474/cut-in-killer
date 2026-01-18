@@ -7,8 +7,10 @@ class Train extends Entity {
         
         // Multi-car train configuration
         this.carCount = Utils.randomInt(3, 6); // Random number of cars: 3-6
-        this.carLength = 80; // Length of each car (increased from effective 150 to 80 per car)
+        this.carLength = 80; // Length of each car (80 pixels each, vs previous fixed 150 total)
         this.carGap = 8; // Gap between cars
+        this.WINDOWS_PER_CAR = 3; // Windows per car
+        this.DOORS_PER_CAR = 2; // Doors per car
         this.height = this.carCount * this.carLength + (this.carCount - 1) * this.carGap; // Total train length
         
         this.color = '#95a5a6';
@@ -111,7 +113,7 @@ class Train extends Entity {
             
             // Train windows (arranged vertically along the car)
             ctx.fillStyle = '#34495e';
-            const windowCount = 3; // 3 windows per car
+            const windowCount = this.WINDOWS_PER_CAR;
             const windowWidth = 25;
             const windowHeight = 15;
             const spacing = this.carLength / (windowCount + 1);
@@ -128,7 +130,7 @@ class Train extends Entity {
             // Train doors (when stopped) - on the right side (toward platform)
             if (this.state === 'stopped') {
                 ctx.fillStyle = '#2ecc71';
-                const doorCount = 2; // 2 doors per car
+                const doorCount = this.DOORS_PER_CAR;
                 const doorSpacing = this.carLength / (doorCount + 1);
                 for (let i = 0; i < doorCount; i++) {
                     ctx.fillRect(
