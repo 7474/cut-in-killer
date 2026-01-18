@@ -24,6 +24,9 @@ class NPC extends Entity {
         // Collision constants
         this.PERSONAL_SPACE_MULTIPLIER = 1.5; // Minimum distance = width * this value
         this.AVOIDANCE_FORCE = 30; // Base force for pushing away from other NPCs
+        this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
+        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
+        this.QUEUE_WIDTH = 30; // Width of queue area on each side of escalator
     }
 
     setTarget(target) {
@@ -78,7 +81,7 @@ class NPC extends Entity {
             const dy = targetY - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            if (dist > 5) {
+            if (dist > this.ARRIVAL_DISTANCE) {
                 // Calculate desired movement
                 let moveX = (dx / dist) * this.speed * deltaTime;
                 let moveY = (dy / dist) * this.speed * deltaTime;
@@ -134,8 +137,6 @@ class NPC extends Entity {
 
     getQueueLinePosition(npcs) {
         // Good NPCs should form a line behind others heading to the same escalator
-        const queueDistance = 25; // Distance between NPCs in queue
-        const queueWidth = 30; // Width of queue area
         
         // Count how many NPCs are ahead of us in line
         let npcsAhead = 0;
@@ -157,8 +158,8 @@ class NPC extends Entity {
         // Use a consistent offset based on initial X position relative to escalator
         const xOffsetSign = this.x > this.target.x ? 1 : -1;
         const queueOffset = {
-            x: xOffsetSign * (queueWidth / 2),
-            y: queueDistance * (npcsAhead + 1)
+            x: xOffsetSign * (this.QUEUE_WIDTH / 2),
+            y: this.QUEUE_DISTANCE * (npcsAhead + 1)
         };
         
         return queueOffset;
