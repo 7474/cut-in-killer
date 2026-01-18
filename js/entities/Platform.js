@@ -8,35 +8,81 @@ class Platform extends Entity {
         this.color = '#7f8c8d';
         this.trainSpawnPoints = config.trainSpawnPoints || [];
         this.escalatorPositions = config.escalatorPositions || [];
+        this.trackWidth = 60; // Width of track area
+    }
+
+    drawRailroadSleepers(ctx, point) {
+        // Sleepers (railroad ties)
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 1;
+        const sleeperCount = 15;
+        for (let i = 0; i < sleeperCount; i++) {
+            const x = this.x + (this.width / sleeperCount) * i;
+            ctx.beginPath();
+            ctx.moveTo(x, point.y - 20);
+            ctx.lineTo(x, point.y + 20);
+            ctx.stroke();
+        }
     }
 
     render(ctx) {
-        // Draw platform base
-        ctx.fillStyle = this.color;
+        // Draw platform areas (lighter gray - where passengers walk)
+        ctx.fillStyle = '#95a5a6'; // Lighter color for platforms
         ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // Draw platform markings
-        ctx.strokeStyle = '#ecf0f1';
+        // Draw track areas (darker - where trains run)
+        ctx.fillStyle = '#4a5256'; // Darker color for tracks
+        for (const point of this.trainSpawnPoints) {
+            ctx.fillRect(
+                this.x,
+                point.y - this.trackWidth / 2,
+                this.width,
+                this.trackWidth
+            );
+        }
+        
+        // Draw railroad tracks (two parallel lines on each track)
+        ctx.strokeStyle = '#34495e';
         ctx.lineWidth = 2;
-        ctx.setLineDash([10, 10]);
-        
-        // Center line
-        ctx.beginPath();
-        ctx.moveTo(this.x + this.width / 2, this.y);
-        ctx.lineTo(this.x + this.width / 2, this.y + this.height);
-        ctx.stroke();
-        
-        // Safety lines
-        ctx.strokeStyle = '#f39c12';
-        ctx.lineWidth = 3;
         ctx.setLineDash([]);
         
         for (const point of this.trainSpawnPoints) {
+            // Left rail
             ctx.beginPath();
-            ctx.moveTo(this.x, point.y);
-            ctx.lineTo(this.x + this.width, point.y);
+            ctx.moveTo(this.x, point.y - 12);
+            ctx.lineTo(this.x + this.width, point.y - 12);
+            ctx.stroke();
+            
+            // Right rail
+            ctx.beginPath();
+            ctx.moveTo(this.x, point.y + 12);
+            ctx.lineTo(this.x + this.width, point.y + 12);
+            ctx.stroke();
+            
+            // Draw sleepers
+            this.drawRailroadSleepers(ctx, point);
+        }
+        
+        // Draw platform edge lines (yellow safety lines) between platforms and tracks
+        ctx.strokeStyle = '#f39c12';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 5]);
+        
+        for (const point of this.trainSpawnPoints) {
+            // Upper platform edge (above track)
+            ctx.beginPath();
+            ctx.moveTo(this.x, point.y - this.trackWidth / 2);
+            ctx.lineTo(this.x + this.width, point.y - this.trackWidth / 2);
+            ctx.stroke();
+            
+            // Lower platform edge (below track)
+            ctx.beginPath();
+            ctx.moveTo(this.x, point.y + this.trackWidth / 2);
+            ctx.lineTo(this.x + this.width, point.y + this.trackWidth / 2);
             ctx.stroke();
         }
+        
+        ctx.setLineDash([]);
     }
 
     getTrainSpawnPoint(index = 0) {
@@ -52,5 +98,26 @@ class Platform extends Entity {
             x: this.x + pos.x,
             y: this.y + pos.y
         }));
+    }
+
+    getTrackAreas() {
+        // Returns array of track area bounds for collision detection
+        return this.trainSpawnPoints.map(point => ({
+            minY: point.y - this.trackWidth / 2,
+            maxY: point.y + this.trackWidth / 2,
+            centerY: point.y
+        }));
+    }
+
+    isOnTrack(x, y) {
+        // Check if a position is on a track area
+        for (const point of this.trainSpawnPoints) {
+            const minY = point.y - this.trackWidth / 2;
+            const maxY = point.y + this.trackWidth / 2;
+            if (y >= minY && y <= maxY) {
+                return true;
+            }
+        }
+        return false;
     }
 }

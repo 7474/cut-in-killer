@@ -33,13 +33,13 @@ class NPC extends Entity {
         this.target = target;
     }
 
-    update(deltaTime, escalators, npcs) {
+    update(deltaTime, escalators, npcs, platform) {
         if (!this.active) return;
         
         this.pathUpdateTimer += deltaTime;
         
         if (this.state === 'walking') {
-            this.walkToEscalator(deltaTime, escalators, npcs);
+            this.walkToEscalator(deltaTime, escalators, npcs, platform);
         } else if (this.state === 'queuing') {
             this.waitInQueue(deltaTime);
         } else if (this.state === 'exiting') {
@@ -47,7 +47,7 @@ class NPC extends Entity {
         }
     }
 
-    walkToEscalator(deltaTime, escalators, npcs) {
+    walkToEscalator(deltaTime, escalators, npcs, platform) {
         if (!this.target && escalators.length > 0) {
             // Find nearest escalator
             this.target = escalators.reduce((nearest, esc) => {
@@ -91,6 +91,13 @@ class NPC extends Entity {
                 moveX += avoidance.x * deltaTime;
                 moveY += avoidance.y * deltaTime;
                 
+                // Apply track avoidance if platform info is available
+                if (platform) {
+                    const trackAvoidance = this.avoidTracks(platform, moveX, moveY);
+                    moveX = trackAvoidance.x;
+                    moveY = trackAvoidance.y;
+                }
+                
                 // Move towards target
                 this.x += moveX;
                 this.y += moveY;
@@ -133,6 +140,46 @@ class NPC extends Entity {
         }
         
         return avoidanceForce;
+    }
+
+    avoidTracks(platform, moveX, moveY) {
+        // Avoid walking on track areas - stay on platforms
+        const newY = this.y + moveY;
+        const trackAreas = platform.getTrackAreas();
+        
+        for (const track of trackAreas) {
+            // Check if we're about to enter or are in a track area
+            if (newY >= track.minY && newY <= track.maxY) {
+                // We're in or entering a track area - redirect movement
+                
+                // Determine which side of the track is closer
+                const distToTop = Math.abs(this.y - track.minY);
+                const distToBottom = Math.abs(this.y - track.maxY);
+                
+                // If already on track, push towards nearest edge
+                if (this.y >= track.minY && this.y <= track.maxY) {
+                    if (distToTop < distToBottom) {
+                        // Push towards top (away from track, negative Y direction)
+                        moveY = Math.min(moveY, track.minY - this.y - 2);
+                    } else {
+                        // Push towards bottom (away from track, positive Y direction)
+                        moveY = Math.max(moveY, track.maxY - this.y + 2);
+                    }
+                } else {
+                    // Prevent entering track - stop Y movement
+                    if (newY > this.y && newY >= track.minY) {
+                        // Moving down into track - stop at top edge
+                        moveY = Math.max(0, track.minY - this.y - 1);
+                    } else if (newY < this.y && newY <= track.maxY) {
+                        // Moving up into track - stop at bottom edge
+                        moveY = Math.min(0, track.maxY - this.y + 1);
+                    }
+                }
+                break;
+            }
+        }
+        
+        return { x: moveX, y: moveY };
     }
 
     getQueueLinePosition(npcs) {

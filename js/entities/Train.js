@@ -3,18 +3,20 @@
 class Train extends Entity {
     constructor(x, y, arrivalTime) {
         super(x, y);
-        this.width = 100;
-        this.height = 40;
+        this.width = 40;  // Now narrow (perpendicular to movement)
+        this.height = 150; // Now long (in direction of movement)
         this.color = '#95a5a6';
         this.state = 'arriving'; // arriving, stopped, departing
         this.arrivalTime = arrivalTime;
         this.stopDuration = 3; // seconds
         this.timer = 0;
-        this.targetY = y;
-        this.startY = y - 200;
-        this.y = this.startY;
+        this.targetX = x; // Target X position (stopped at platform)
+        this.startX = x - 200; // Start from left
+        this.x = this.startX;
+        this.endX = x + 200; // Exit to right
         this.passengers = [];
         this.hasUnloaded = false;
+        this.DOOR_CLEARANCE = 15; // Space between train doors and NPC spawn position
     }
 
     generatePassengers() {
@@ -23,8 +25,10 @@ class Train extends Entity {
         
         for (let i = 0; i < count; i++) {
             const type = Math.random() < goodRatio ? 'good' : 'bad';
-            const offsetX = Utils.randomFloat(-30, 30);
-            const npc = new NPC(this.x + offsetX, this.y, type);
+            const offsetY = Utils.randomFloat(-50, 50); // Spread along train length
+            // NPCs spawn on the platform side (right side of train) where doors open
+            const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
+            const npc = new NPC(this.x + platformOffset, this.y + offsetY, type);
             this.passengers.push(npc);
         }
     }
@@ -35,8 +39,8 @@ class Train extends Entity {
         this.timer += deltaTime;
         
         if (this.state === 'arriving') {
-            // Move train into position
-            this.y = Utils.lerp(this.startY, this.targetY, Math.min(this.timer / 1.5, 1));
+            // Move train from left to platform position
+            this.x = Utils.lerp(this.startX, this.targetX, Math.min(this.timer / 1.5, 1));
             
             if (this.timer >= 1.5) {
                 this.state = 'stopped';
@@ -53,8 +57,8 @@ class Train extends Entity {
                 this.timer = 0;
             }
         } else if (this.state === 'departing') {
-            // Move train out of view
-            this.y = Utils.lerp(this.targetY, this.startY, Math.min(this.timer / 1.5, 1));
+            // Move train from platform to right (pass through)
+            this.x = Utils.lerp(this.targetX, this.endX, Math.min(this.timer / 1.5, 1));
             
             if (this.timer >= 1.5) {
                 this.active = false;
@@ -74,7 +78,7 @@ class Train extends Entity {
     render(ctx) {
         if (!this.active) return;
         
-        // Train body
+        // Train body (vertical orientation)
         ctx.fillStyle = this.color;
         ctx.fillRect(
             this.x - this.width / 2,
@@ -83,31 +87,35 @@ class Train extends Entity {
             this.height
         );
         
-        // Train windows
+        // Train windows (arranged vertically)
         ctx.fillStyle = '#34495e';
-        const windowCount = 3;
-        const windowWidth = 20;
-        const windowHeight = 15;
-        const spacing = this.width / (windowCount + 1);
+        const windowCount = 5;
+        const windowWidth = 25;
+        const windowHeight = 20;
+        const spacing = this.height / (windowCount + 1);
         
         for (let i = 0; i < windowCount; i++) {
             ctx.fillRect(
-                this.x - this.width / 2 + spacing * (i + 1) - windowWidth / 2,
-                this.y - windowHeight / 2,
+                this.x - windowWidth / 2,
+                this.y - this.height / 2 + spacing * (i + 1) - windowHeight / 2,
                 windowWidth,
                 windowHeight
             );
         }
         
-        // Train doors (when stopped)
+        // Train doors (when stopped) - on the right side
         if (this.state === 'stopped') {
             ctx.fillStyle = '#2ecc71';
-            ctx.fillRect(
-                this.x - 5,
-                this.y + this.height / 2 - 5,
-                10,
-                5
-            );
+            const doorCount = 3;
+            const doorSpacing = this.height / (doorCount + 1);
+            for (let i = 0; i < doorCount; i++) {
+                ctx.fillRect(
+                    this.x + this.width / 2 - 2,
+                    this.y - this.height / 2 + doorSpacing * (i + 1) - 8,
+                    5,
+                    16
+                );
+            }
         }
     }
 }

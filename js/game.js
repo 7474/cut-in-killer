@@ -232,7 +232,7 @@ class Game {
         });
         
         this.npcs = this.npcs.filter(npc => {
-            npc.update(deltaTime, this.escalators, this.npcs);
+            npc.update(deltaTime, this.escalators, this.npcs, this.platform);
             
             // Check if NPC exited
             if (!npc.active && npc.state === 'exiting') {
