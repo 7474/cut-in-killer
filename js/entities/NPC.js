@@ -25,7 +25,7 @@ class NPC extends Entity {
         this.PERSONAL_SPACE_MULTIPLIER = 2.5; // Minimum distance = width * this value (increased from 1.5 to prevent overlap)
         this.AVOIDANCE_FORCE = 60; // Base force for pushing away from other NPCs (increased from 30 for stronger separation)
         this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
-        this.QUEUE_DISTANCE = 35; // Distance between NPCs in queue line (increased from 25 to prevent overlap)
+        this.QUEUE_DISTANCE = 10; // Distance between NPCs in queue line
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
     }
 
@@ -63,11 +63,10 @@ class NPC extends Entity {
             
             if (this.type === 'good') {
                 // Good NPCs: Form a queue line approaching the escalator
-                // Cache the queue offset to avoid recalculating every frame
-                // This provides stable, non-jittery movement at the cost of
-                // not dynamically adjusting position when queue composition changes
-                if (!this.queueOffset) {
+                // Update queue offset periodically to reflect changing queue composition
+                if (!this.queueOffset || this.pathUpdateTimer >= this.pathUpdateInterval) {
                     this.queueOffset = this.getQueueLinePosition(npcs);
+                    this.pathUpdateTimer = 0;  // Reset timer after updating
                 }
                 targetX = this.target.x + this.queueOffset.x;
                 targetY = this.target.y + this.queueOffset.y;
@@ -186,32 +185,38 @@ class NPC extends Entity {
     }
 
     getQueueLinePosition(npcs) {
-        // Good NPCs should form a line behind others heading to the same escalator
+        // Good NPCs should form a straight line directly behind the escalator
         
         // Calculate our distance once (optimization)
         const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
         
-        // Count how many NPCs are ahead of us in line
+        // Count how many NPCs are already in line for this escalator
+        // This includes both NPCs walking to the escalator and those already queuing
         let npcsAhead = 0;
         
         for (const npc of npcs) {
             if (npc === this || !npc.active || npc.type !== 'good') continue;
             if (npc.target !== this.target) continue;
             
-            // Check if this NPC is closer to the escalator
-            const theirDist = Utils.distance(npc.x, npc.y, this.target.x, this.target.y);
-            
-            if (theirDist < myDist) {
+            // Count NPCs that are closer to the escalator OR already in queue
+            if (npc.state === 'queuing') {
+                // NPCs already queuing are always ahead
                 npcsAhead++;
+            } else if (npc.state === 'walking') {
+                // For walking NPCs, check distance
+                const theirDist = Utils.distance(npc.x, npc.y, this.target.x, this.target.y);
+                
+                if (theirDist < myDist) {
+                    npcsAhead++;
+                }
             }
         }
         
-        // Position in queue line extending away from escalator
-        // Use a consistent offset based on initial X position relative to escalator
-        const xOffsetSign = this.x > this.target.x ? 1 : -1;
+        // Position in a straight line directly behind the escalator
+        // No X offset - everyone lines up at the same X position as the escalator
         const queueOffset = {
-            x: xOffsetSign * (this.QUEUE_WIDTH / 2),
-            y: this.QUEUE_DISTANCE * (npcsAhead + 1)
+            x: 0,  // Directly in line with escalator
+            y: this.QUEUE_DISTANCE * (npcsAhead + 1)  // Extend line downward
         };
         
         return queueOffset;
@@ -273,6 +278,10 @@ class NPC extends Entity {
             // Check if it's time to exit
             if (this.target.canExit(this)) {
                 this.state = 'exiting';
+                // Remove from queue and reset escalator timer
+                this.target.removeFromQueue(this);
+                this.target.exitTimer = 0;
+                this.queuePosition = null;
             }
         }
     }
