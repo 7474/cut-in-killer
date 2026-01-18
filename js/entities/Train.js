@@ -19,8 +19,10 @@ class Train extends Entity {
         this.DOOR_CLEARANCE = 15; // Space between train doors and NPC spawn position
         
         // Calculate durations to maintain consistent speed
-        this.TRAIN_SPEED = 200 / 1.5; // pixels per second (based on arrival distance/time)
-        this.arrivalDuration = 1.5;
+        const ARRIVAL_DISTANCE = Math.abs(this.targetY - this.startY);
+        const ARRIVAL_DURATION = 1.5; // seconds
+        this.TRAIN_SPEED = ARRIVAL_DISTANCE / ARRIVAL_DURATION; // pixels per second
+        this.arrivalDuration = ARRIVAL_DURATION;
         this.departingDuration = Math.abs(this.targetY - this.endY) / this.TRAIN_SPEED;
     }
 
