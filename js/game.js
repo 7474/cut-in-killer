@@ -308,6 +308,8 @@ class Game {
             const cooldownBar = document.getElementById('cooldown-bar');
             const cooldownText = document.getElementById('cooldown-text');
             
+            if (!cooldownBar || !cooldownText) return;
+            
             // Update bar width
             cooldownBar.style.width = (cooldownPercent * 100) + '%';
             
