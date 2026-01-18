@@ -63,10 +63,8 @@ class NPC extends Entity {
             
             if (this.type === 'good') {
                 // Good NPCs: Form a queue line approaching the escalator
-                // Cache the queue offset to avoid recalculating every frame
-                // This provides stable, non-jittery movement at the cost of
-                // not dynamically adjusting position when queue composition changes
-                if (!this.queueOffset) {
+                // Update queue offset periodically to reflect changing queue composition
+                if (!this.queueOffset || this.pathUpdateTimer >= this.pathUpdateInterval) {
                     this.queueOffset = this.getQueueLinePosition(npcs);
                 }
                 targetX = this.target.x + this.queueOffset.x;
@@ -186,32 +184,36 @@ class NPC extends Entity {
     }
 
     getQueueLinePosition(npcs) {
-        // Good NPCs should form a line behind others heading to the same escalator
+        // Good NPCs should form a straight line directly behind the escalator
         
-        // Calculate our distance once (optimization)
-        const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
-        
-        // Count how many NPCs are ahead of us in line
+        // Count how many NPCs are already in line for this escalator
+        // This includes both NPCs walking to the escalator and those already queuing
         let npcsAhead = 0;
         
         for (const npc of npcs) {
             if (npc === this || !npc.active || npc.type !== 'good') continue;
             if (npc.target !== this.target) continue;
             
-            // Check if this NPC is closer to the escalator
-            const theirDist = Utils.distance(npc.x, npc.y, this.target.x, this.target.y);
-            
-            if (theirDist < myDist) {
+            // Count NPCs that are closer to the escalator OR already in queue
+            if (npc.state === 'queuing') {
+                // NPCs already queuing are always ahead
                 npcsAhead++;
+            } else if (npc.state === 'walking') {
+                // For walking NPCs, check distance
+                const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
+                const theirDist = Utils.distance(npc.x, npc.y, this.target.x, this.target.y);
+                
+                if (theirDist < myDist) {
+                    npcsAhead++;
+                }
             }
         }
         
-        // Position in queue line extending away from escalator
-        // Use a consistent offset based on initial X position relative to escalator
-        const xOffsetSign = this.x > this.target.x ? 1 : -1;
+        // Position in a straight line directly behind the escalator
+        // No X offset - everyone lines up at the same X position as the escalator
         const queueOffset = {
-            x: xOffsetSign * (this.QUEUE_WIDTH / 2),
-            y: this.QUEUE_DISTANCE * (npcsAhead + 1)
+            x: 0,  // Directly in line with escalator
+            y: this.QUEUE_DISTANCE * (npcsAhead + 1)  // Extend line downward
         };
         
         return queueOffset;
