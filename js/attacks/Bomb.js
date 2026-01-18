@@ -1,0 +1,121 @@
+// Bomb attack - large area damage with delay
+
+class Bomb extends Attack {
+    constructor() {
+        super();
+        this.name = 'Bomb';
+        this.cooldown = 3;
+        this.radius = 80;
+        this.fuseTime = 1; // 1 second fuse
+        this.explosionDuration = 0.5;
+        this.bombs = [];
+    }
+
+    execute(x, y, npcs) {
+        // Place bomb with fuse
+        this.bombs.push({
+            x: x,
+            y: y,
+            radius: this.radius,
+            fuseTimer: 0,
+            fuseTime: this.fuseTime,
+            state: 'fuse', // fuse, exploding
+            explosionTimer: 0,
+            npcs: npcs // Reference to check on explosion
+        });
+        
+        return []; // No immediate hits
+    }
+
+    update(deltaTime) {
+        super.update(deltaTime);
+        
+        // Update bombs
+        this.bombs = this.bombs.filter(bomb => {
+            if (bomb.state === 'fuse') {
+                bomb.fuseTimer += deltaTime;
+                
+                if (bomb.fuseTimer >= bomb.fuseTime) {
+                    bomb.state = 'exploding';
+                    this.explode(bomb);
+                }
+                return true;
+            } else if (bomb.state === 'exploding') {
+                bomb.explosionTimer += deltaTime;
+                return bomb.explosionTimer < this.explosionDuration;
+            }
+            return false;
+        });
+    }
+
+    explode(bomb) {
+        // Hit all NPCs in radius
+        for (const npc of bomb.npcs) {
+            if (!npc.active) continue;
+            
+            const dist = Utils.distance(bomb.x, bomb.y, npc.x, npc.y);
+            if (dist <= bomb.radius) {
+                npc.remove();
+            }
+        }
+    }
+
+    render(ctx) {
+        for (const bomb of this.bombs) {
+            if (bomb.state === 'fuse') {
+                // Draw bomb with pulsing fuse
+                const pulseScale = 1 + Math.sin(bomb.fuseTimer * 10) * 0.2;
+                const fuseProgress = bomb.fuseTimer / bomb.fuseTime;
+                
+                // Bomb body
+                ctx.fillStyle = '#2c3e50';
+                ctx.beginPath();
+                ctx.arc(bomb.x, bomb.y, 10 * pulseScale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Fuse
+                ctx.strokeStyle = fuseProgress > 0.7 ? '#e74c3c' : '#f39c12';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(bomb.x, bomb.y - 10 * pulseScale);
+                ctx.lineTo(bomb.x, bomb.y - 20 * pulseScale);
+                ctx.stroke();
+                
+                // Danger radius indicator
+                ctx.strokeStyle = `rgba(231, 76, 60, ${fuseProgress * 0.5})`;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(bomb.x, bomb.y, bomb.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+            } else if (bomb.state === 'exploding') {
+                // Draw explosion
+                const progress = bomb.explosionTimer / this.explosionDuration;
+                const currentRadius = bomb.radius * progress;
+                const alpha = 1 - progress;
+                
+                // Outer ring
+                ctx.strokeStyle = `rgba(255, 107, 107, ${alpha})`;
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.arc(bomb.x, bomb.y, currentRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Middle ring
+                ctx.strokeStyle = `rgba(255, 165, 0, ${alpha})`;
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.arc(bomb.x, bomb.y, currentRadius * 0.7, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Inner core
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(bomb.x, bomb.y, currentRadius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+}

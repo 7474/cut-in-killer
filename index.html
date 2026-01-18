@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Cut-in Killer - カットインキラー</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="menu-screen" class="screen active">
+            <h1>Cut-in Killer</h1>
+            <p>割り込みを阻止せよ！</p>
+            <div id="map-selection">
+                <h2>マップ選択</h2>
+                <div id="map-list"></div>
+            </div>
+            <div id="attack-selection">
+                <h2>攻撃タイプ</h2>
+                <div id="attack-list">
+                    <button class="attack-btn" data-attack="bodyslam">体当たり</button>
+                    <button class="attack-btn" data-attack="laser">レーザービーム</button>
+                    <button class="attack-btn" data-attack="bomb">爆撃</button>
+                </div>
+            </div>
+            <button id="start-btn" class="primary-btn">スタート</button>
+        </div>
+        <div id="game-screen" class="screen">
+            <div id="hud">
+                <div class="hud-item">
+                    <span class="hud-label">スコア:</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">時間:</span>
+                    <span id="timer">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">攻撃:</span>
+                    <span id="current-attack">-</span>
+                </div>
+            </div>
+        </div>
+        <div id="gameover-screen" class="screen">
+            <h1>ゲームオーバー</h1>
+            <div class="result">
+                <p>最終スコア: <span id="final-score">0</span></p>
+                <p id="highscore-msg"></p>
+            </div>
+            <button id="restart-btn" class="primary-btn">もう一度</button>
+            <button id="menu-btn" class="secondary-btn">メニュー</button>
+        </div>
+    </div>
+    
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/entities/Entity.js"></script>
+    <script src="js/entities/NPC.js"></script>
+    <script src="js/entities/Train.js"></script>
+    <script src="js/entities/Platform.js"></script>
+    <script src="js/entities/Escalator.js"></script>
+    <script src="js/attacks/Attack.js"></script>
+    <script src="js/attacks/BodySlam.js"></script>
+    <script src="js/attacks/Laser.js"></script>
+    <script src="js/attacks/Bomb.js"></script>
+    <script src="js/maps.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
