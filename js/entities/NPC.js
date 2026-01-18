@@ -138,6 +138,9 @@ class NPC extends Entity {
     getQueueLinePosition(npcs) {
         // Good NPCs should form a line behind others heading to the same escalator
         
+        // Calculate our distance once (optimization)
+        const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
+        
         // Count how many NPCs are ahead of us in line
         let npcsAhead = 0;
         
@@ -147,7 +150,6 @@ class NPC extends Entity {
             
             // Check if this NPC is closer to the escalator
             const theirDist = Utils.distance(npc.x, npc.y, this.target.x, this.target.y);
-            const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
             
             if (theirDist < myDist) {
                 npcsAhead++;
@@ -169,11 +171,13 @@ class NPC extends Entity {
         // Bad NPCs try to push past good NPCs
         for (const npc of npcs) {
             if (npc === this || !npc.active) continue;
-            if (npc.type === 'good' && Utils.distance(this.x, this.y, npc.x, npc.y) < 30) {
+            
+            const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
+            
+            if (npc.type === 'good' && dist < 30) {
                 // Push the good NPC slightly
                 const dx = npc.x - this.x;
                 const dy = npc.y - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist > 0) {
                     npc.x += (dx / dist) * 5;
                     npc.y += (dy / dist) * 5;
