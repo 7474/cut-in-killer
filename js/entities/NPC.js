@@ -278,8 +278,12 @@ class NPC extends Entity {
     }
 
     exitPlatform(deltaTime) {
-        // Immediately deactivate when exiting (disappear from screen)
-        this.active = false;
+        // Move up (off screen)
+        this.y -= 100 * deltaTime;
+        
+        if (this.y < -50) {
+            this.active = false;
+        }
     }
 
     render(ctx) {
