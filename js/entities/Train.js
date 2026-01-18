@@ -16,6 +16,7 @@ class Train extends Entity {
         this.endX = x + 200; // Exit to right
         this.passengers = [];
         this.hasUnloaded = false;
+        this.DOOR_CLEARANCE = 15; // Space between train doors and NPC spawn position
     }
 
     generatePassengers() {
@@ -26,7 +27,7 @@ class Train extends Entity {
             const type = Math.random() < goodRatio ? 'good' : 'bad';
             const offsetY = Utils.randomFloat(-50, 50); // Spread along train length
             // NPCs spawn on the platform side (right side of train) where doors open
-            const platformOffset = this.width / 2 + 15; // Spawn just outside the train doors
+            const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
             const npc = new NPC(this.x + platformOffset, this.y + offsetY, type);
             this.passengers.push(npc);
         }
