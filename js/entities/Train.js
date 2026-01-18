@@ -3,8 +3,8 @@
 class Train extends Entity {
     constructor(x, y, arrivalTime) {
         super(x, y);
-        this.width = 150;  // Long (horizontal, across the track)
-        this.height = 40;  // Narrow (vertical, along movement direction)
+        this.width = 40;   // Narrow (horizontal, perpendicular to movement)
+        this.height = 150; // Long (vertical, parallel to movement direction)
         this.color = '#95a5a6';
         this.state = 'arriving'; // arriving, stopped, departing
         this.arrivalTime = arrivalTime;
@@ -25,10 +25,10 @@ class Train extends Entity {
         
         for (let i = 0; i < count; i++) {
             const type = Math.random() < goodRatio ? 'good' : 'bad';
-            const offsetX = Utils.randomFloat(-50, 50); // Spread along train length
-            // NPCs spawn on the platform (above the train when train stops)
-            const platformOffset = this.height / 2 + this.DOOR_CLEARANCE;
-            const npc = new NPC(this.x + offsetX, this.y - platformOffset, type);
+            const offsetY = Utils.randomFloat(-60, 60); // Spread along train length (vertical)
+            // NPCs spawn on the platform (to the right of the train when train stops)
+            const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
+            const npc = new NPC(this.x + platformOffset, this.y + offsetY, type);
             this.passengers.push(npc);
         }
     }
@@ -87,33 +87,33 @@ class Train extends Entity {
             this.height
         );
         
-        // Train windows (arranged horizontally along the width)
+        // Train windows (arranged vertically along the height)
         ctx.fillStyle = '#34495e';
         const windowCount = 5;
-        const windowWidth = 20;
-        const windowHeight = 25;
-        const spacing = this.width / (windowCount + 1);
+        const windowWidth = 25;
+        const windowHeight = 20;
+        const spacing = this.height / (windowCount + 1);
         
         for (let i = 0; i < windowCount; i++) {
             ctx.fillRect(
-                this.x - this.width / 2 + spacing * (i + 1) - windowWidth / 2,
-                this.y - windowHeight / 2,
+                this.x - windowWidth / 2,
+                this.y - this.height / 2 + spacing * (i + 1) - windowHeight / 2,
                 windowWidth,
                 windowHeight
             );
         }
         
-        // Train doors (when stopped) - on the top side (toward platform)
+        // Train doors (when stopped) - on the right side (toward platform)
         if (this.state === 'stopped') {
             ctx.fillStyle = '#2ecc71';
             const doorCount = 3;
-            const doorSpacing = this.width / (doorCount + 1);
+            const doorSpacing = this.height / (doorCount + 1);
             for (let i = 0; i < doorCount; i++) {
                 ctx.fillRect(
-                    this.x - this.width / 2 + doorSpacing * (i + 1) - 8,
-                    this.y - this.height / 2 - 2,
-                    16,
-                    5
+                    this.x + this.width / 2 - 2,
+                    this.y - this.height / 2 + doorSpacing * (i + 1) - 8,
+                    5,
+                    16
                 );
             }
         }
