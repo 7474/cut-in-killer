@@ -246,21 +246,22 @@ class NPC extends Entity {
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
             // If too close, push them apart equally
-            if (dist < minSpacing && dist > 0) {
+            // Skip if distance is too small to avoid division issues
+            if (dist < minSpacing && dist > 0.1) {
                 const overlap = minSpacing - dist;
                 const dx = this.x - npc.x;
                 const dy = this.y - npc.y;
                 const pushDistance = overlap / 2;
                 
-                // Push this NPC away
-                this.x += (dx / dist) * pushDistance;
-                this.y += (dy / dist) * pushDistance;
+                // Normalize and push both NPCs away from each other
+                const normalizedDx = dx / dist;
+                const normalizedDy = dy / dist;
                 
-                // Push other NPC away (only if it's not in queue already)
-                if (npc.state === 'walking') {
-                    npc.x -= (dx / dist) * pushDistance;
-                    npc.y -= (dy / dist) * pushDistance;
-                }
+                this.x += normalizedDx * pushDistance;
+                this.y += normalizedDy * pushDistance;
+                
+                npc.x -= normalizedDx * pushDistance;
+                npc.y -= normalizedDy * pushDistance;
             }
         }
     }
