@@ -8,6 +8,19 @@
 2. **Satisfying Catharsis** - The core emotion is the satisfaction of blowing away annoying mobs from everyday life (割り込みをする行儀の悪いモブ)
 3. **Single-Finger Operation** - All gameplay must be achievable with one finger (tap/touch only)
 
+## Design Philosophy
+
+### Visual Design
+- **Flat and Abstract** - Use simple geometric shapes and flat colors
+- **Minimalist approach** - Avoid realistic textures or complex graphics
+- **Clear visual hierarchy** - Game elements should be instantly recognizable
+
+### Behavioral Design
+- **Realistic foundation** - Base behaviors on real-world physics and movement patterns
+- **Black Humor welcomed** - Exaggerated consequences are encouraged (e.g., mobs blown off platform onto train tracks and hit by passing trains)
+- **Cathartic outcomes** - Satisfying visual and behavioral feedback when eliminating badly-behaved NPCs
+- **Comedic timing** - Behaviors should feel natural but allow for humorous exaggeration
+
 ## Project Overview
 
 Cut-in Killer (カットインキラー) is a casual web-based game set on a Tokyo subway platform. Players help well-behaved NPCs (blue circles) exit safely via escalators while eliminating badly-behaved NPCs (red squares) who try to cut in line.
@@ -19,6 +32,7 @@ Cut-in Killer (カットインキラー) is a casual web-based game set on a Tok
 - **CSS3** for UI/UX
 - **LocalStorage** for high score persistence
 - **No frameworks or build tools** - pure client-side application
+- **Visual Style** - Flat design with simple geometric shapes (circles for good NPCs, squares for bad NPCs)
 
 ## Code Architecture
 
@@ -241,6 +255,9 @@ const dist = Utils.distance(x1, y1, x2, y2); // Use utility
 ### DO:
 - ✅ **ALWAYS keep the core concept in mind: mobile-first, single-finger, cathartic mob-blasting**
 - ✅ **ALWAYS use mobile device emulation when taking screenshots**
+- ✅ Use flat, abstract visual design with simple geometric shapes
+- ✅ Allow for black humor and exaggerated consequences in behaviors
+- ✅ Maintain realistic base physics while adding comedic exaggeration
 - ✅ Use ES6 classes with extends
 - ✅ Use `deltaTime` for all time-based calculations
 - ✅ Call `super()` first in constructors
@@ -253,6 +270,8 @@ const dist = Utils.distance(x1, y1, x2, y2); // Use utility
 ### DON'T:
 - ❌ **Break the single-finger operation principle**
 - ❌ **Forget this is a mobile-first game**
+- ❌ Add realistic textures or complex 3D graphics
+- ❌ Make behaviors overly serious or realistic without humor
 - ❌ Add external libraries without strong justification
 - ❌ Use frameworks (React, Vue, etc.)
 - ❌ Add build tools unless absolutely necessary
