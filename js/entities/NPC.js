@@ -66,6 +66,7 @@ class NPC extends Entity {
                 // Update queue offset periodically to reflect changing queue composition
                 if (!this.queueOffset || this.pathUpdateTimer >= this.pathUpdateInterval) {
                     this.queueOffset = this.getQueueLinePosition(npcs);
+                    this.pathUpdateTimer = 0;  // Reset timer after updating
                 }
                 targetX = this.target.x + this.queueOffset.x;
                 targetY = this.target.y + this.queueOffset.y;
@@ -186,6 +187,9 @@ class NPC extends Entity {
     getQueueLinePosition(npcs) {
         // Good NPCs should form a straight line directly behind the escalator
         
+        // Calculate our distance once (optimization)
+        const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
+        
         // Count how many NPCs are already in line for this escalator
         // This includes both NPCs walking to the escalator and those already queuing
         let npcsAhead = 0;
@@ -200,7 +204,6 @@ class NPC extends Entity {
                 npcsAhead++;
             } else if (npc.state === 'walking') {
                 // For walking NPCs, check distance
-                const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
                 const theirDist = Utils.distance(npc.x, npc.y, this.target.x, this.target.y);
                 
                 if (theirDist < myDist) {
