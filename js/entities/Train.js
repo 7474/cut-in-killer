@@ -3,8 +3,8 @@
 class Train extends Entity {
     constructor(x, y, arrivalTime) {
         super(x, y);
-        this.width = 150;  // Long (perpendicular to movement direction)
-        this.height = 40;  // Narrow (in direction of movement)
+        this.width = 150;  // Long (horizontal, across the track)
+        this.height = 40;  // Narrow (vertical, along movement direction)
         this.color = '#95a5a6';
         this.state = 'arriving'; // arriving, stopped, departing
         this.arrivalTime = arrivalTime;
@@ -78,7 +78,7 @@ class Train extends Entity {
     render(ctx) {
         if (!this.active) return;
         
-        // Train body (horizontal orientation)
+        // Train body (wide horizontally, moving vertically)
         ctx.fillStyle = this.color;
         ctx.fillRect(
             this.x - this.width / 2,
@@ -87,7 +87,7 @@ class Train extends Entity {
             this.height
         );
         
-        // Train windows (arranged horizontally)
+        // Train windows (arranged horizontally along the width)
         ctx.fillStyle = '#34495e';
         const windowCount = 5;
         const windowWidth = 20;
