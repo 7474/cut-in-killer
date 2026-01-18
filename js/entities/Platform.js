@@ -99,4 +99,25 @@ class Platform extends Entity {
             y: this.y + pos.y
         }));
     }
+
+    getTrackAreas() {
+        // Returns array of track area bounds for collision detection
+        return this.trainSpawnPoints.map(point => ({
+            minY: point.y - this.trackWidth / 2,
+            maxY: point.y + this.trackWidth / 2,
+            centerY: point.y
+        }));
+    }
+
+    isOnTrack(x, y) {
+        // Check if a position is on a track area
+        for (const point of this.trainSpawnPoints) {
+            const minY = point.y - this.trackWidth / 2;
+            const maxY = point.y + this.trackWidth / 2;
+            if (y >= minY && y <= maxY) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
