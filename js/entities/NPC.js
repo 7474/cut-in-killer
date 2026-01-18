@@ -20,6 +20,10 @@ class NPC extends Entity {
         this.pathUpdateTimer = 0;
         this.pathUpdateInterval = 0.5; // Update path every 0.5 seconds
         this.queueOffset = null; // Cache queue position to avoid jittery movement
+        
+        // Collision constants
+        this.PERSONAL_SPACE_MULTIPLIER = 1.5; // Minimum distance = width * this value
+        this.AVOIDANCE_FORCE = 30; // Base force for pushing away from other NPCs
     }
 
     setTarget(target) {
@@ -57,6 +61,8 @@ class NPC extends Entity {
             if (this.type === 'good') {
                 // Good NPCs: Form a queue line approaching the escalator
                 // Cache the queue offset to avoid recalculating every frame
+                // This provides stable, non-jittery movement at the cost of
+                // not dynamically adjusting position when queue composition changes
                 if (!this.queueOffset) {
                     this.queueOffset = this.getQueueLinePosition(npcs);
                 }
@@ -101,7 +107,7 @@ class NPC extends Entity {
 
     calculateCollisionAvoidance(npcs) {
         const avoidanceForce = { x: 0, y: 0 };
-        const personalSpace = this.width * 1.5; // Minimum distance to maintain
+        const personalSpace = this.width * this.PERSONAL_SPACE_MULTIPLIER;
         
         for (const npc of npcs) {
             if (npc === this || !npc.active || npc.state !== 'walking') continue;
@@ -114,11 +120,12 @@ class NPC extends Entity {
                 const dy = this.y - npc.y;
                 const pushStrength = (personalSpace - dist) / personalSpace;
                 
-                // Bad NPCs are more aggressive and push through
-                const aggression = this.type === 'bad' ? 0.5 : 1.0;
+                // Bad NPCs are more aggressive: lower avoidance multiplier means they push through more
+                // Good NPCs respect personal space: higher multiplier means stronger avoidance
+                const avoidanceMultiplier = this.type === 'bad' ? 0.5 : 1.0;
                 
-                avoidanceForce.x += (dx / dist) * pushStrength * 30 * aggression;
-                avoidanceForce.y += (dy / dist) * pushStrength * 30 * aggression;
+                avoidanceForce.x += (dx / dist) * pushStrength * this.AVOIDANCE_FORCE * avoidanceMultiplier;
+                avoidanceForce.y += (dy / dist) * pushStrength * this.AVOIDANCE_FORCE * avoidanceMultiplier;
             }
         }
         
