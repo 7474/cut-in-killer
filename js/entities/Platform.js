@@ -8,11 +8,24 @@ class Platform extends Entity {
         this.color = '#7f8c8d';
         this.trainSpawnPoints = config.trainSpawnPoints || [];
         this.escalatorPositions = config.escalatorPositions || [];
+        this.trackWidth = 60; // Width of track area
+    }
+
+    drawRailroadSleepers(ctx, point) {
+        // Sleepers (railroad ties)
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 1;
+        const sleeperCount = 15;
+        for (let i = 0; i < sleeperCount; i++) {
+            const x = this.x + (this.width / sleeperCount) * i;
+            ctx.beginPath();
+            ctx.moveTo(x, point.y - 20);
+            ctx.lineTo(x, point.y + 20);
+            ctx.stroke();
+        }
     }
 
     render(ctx) {
-        const trackWidth = 60; // Width of track area
-        
         // Draw platform areas (lighter gray - where passengers walk)
         ctx.fillStyle = '#95a5a6'; // Lighter color for platforms
         ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -22,9 +35,9 @@ class Platform extends Entity {
         for (const point of this.trainSpawnPoints) {
             ctx.fillRect(
                 this.x,
-                point.y - trackWidth / 2,
+                point.y - this.trackWidth / 2,
                 this.width,
-                trackWidth
+                this.trackWidth
             );
         }
         
@@ -46,19 +59,8 @@ class Platform extends Entity {
             ctx.lineTo(this.x + this.width, point.y + 12);
             ctx.stroke();
             
-            // Sleepers (railroad ties)
-            ctx.strokeStyle = '#2c3e50';
-            ctx.lineWidth = 1;
-            const sleeperCount = 15;
-            for (let i = 0; i < sleeperCount; i++) {
-                const x = this.x + (this.width / sleeperCount) * i;
-                ctx.beginPath();
-                ctx.moveTo(x, point.y - 20);
-                ctx.lineTo(x, point.y + 20);
-                ctx.stroke();
-            }
-            ctx.strokeStyle = '#34495e';
-            ctx.lineWidth = 2;
+            // Draw sleepers
+            this.drawRailroadSleepers(ctx, point);
         }
         
         // Draw platform edge lines (yellow safety lines) between platforms and tracks
@@ -69,14 +71,14 @@ class Platform extends Entity {
         for (const point of this.trainSpawnPoints) {
             // Upper platform edge (above track)
             ctx.beginPath();
-            ctx.moveTo(this.x, point.y - trackWidth / 2);
-            ctx.lineTo(this.x + this.width, point.y - trackWidth / 2);
+            ctx.moveTo(this.x, point.y - this.trackWidth / 2);
+            ctx.lineTo(this.x + this.width, point.y - this.trackWidth / 2);
             ctx.stroke();
             
             // Lower platform edge (below track)
             ctx.beginPath();
-            ctx.moveTo(this.x, point.y + trackWidth / 2);
-            ctx.lineTo(this.x + this.width, point.y + trackWidth / 2);
+            ctx.moveTo(this.x, point.y + this.trackWidth / 2);
+            ctx.lineTo(this.x + this.width, point.y + this.trackWidth / 2);
             ctx.stroke();
         }
         
