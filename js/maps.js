@@ -8,11 +8,11 @@ const Maps = {
         width: 600,
         height: 800,
         trainSpawnPoints: [
-            { x: 300, y: 200 }
+            { x: 300, y: 300 }
         ],
         escalatorPositions: [
-            { x: 200, y: 50 },
-            { x: 400, y: 50 }
+            { x: 200, y: 80 },
+            { x: 400, y: 80 }
         ],
         trainInterval: 10, // seconds between trains
         gameDuration: 120 // 2 minutes
@@ -25,13 +25,13 @@ const Maps = {
         width: 600,
         height: 800,
         trainSpawnPoints: [
-            { x: 300, y: 200 },
-            { x: 300, y: 400 }
+            { x: 300, y: 280 },
+            { x: 300, y: 480 }
         ],
         escalatorPositions: [
-            { x: 150, y: 50 },
-            { x: 300, y: 50 },
-            { x: 450, y: 50 }
+            { x: 150, y: 80 },
+            { x: 300, y: 80 },
+            { x: 450, y: 80 }
         ],
         trainInterval: 8,
         gameDuration: 120
@@ -44,15 +44,15 @@ const Maps = {
         width: 600,
         height: 800,
         trainSpawnPoints: [
-            { x: 300, y: 150 },
-            { x: 300, y: 350 },
-            { x: 300, y: 550 }
+            { x: 300, y: 220 },
+            { x: 300, y: 400 },
+            { x: 300, y: 580 }
         ],
         escalatorPositions: [
-            { x: 120, y: 50 },
-            { x: 240, y: 50 },
-            { x: 360, y: 50 },
-            { x: 480, y: 50 }
+            { x: 120, y: 80 },
+            { x: 240, y: 80 },
+            { x: 360, y: 80 },
+            { x: 480, y: 80 }
         ],
         trainInterval: 6,
         gameDuration: 180 // 3 minutes
