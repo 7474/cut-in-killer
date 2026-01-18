@@ -64,7 +64,7 @@ cut-in-killer/
    - Methods/variables: camelCase (e.g., `walkToEscalator`, `cooldownTimer`)
    - Config objects: camelCase keys (e.g., `trainInterval`, `gameDuration`)
 4. **Comments**: Brief single-line comments for complex logic; avoid obvious comments
-5. **No semicolons policy**: Code uses semicolons consistently - maintain this style
+5. **Semicolons**: Code uses semicolons consistently - always include semicolons
 
 ### Entity Pattern
 
