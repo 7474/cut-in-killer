@@ -25,7 +25,7 @@ class NPC extends Entity {
         this.PERSONAL_SPACE_MULTIPLIER = 2.5; // Minimum distance = width * this value (increased from 1.5 to prevent overlap)
         this.AVOIDANCE_FORCE = 60; // Base force for pushing away from other NPCs (increased from 30 for stronger separation)
         this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
-        this.QUEUE_DISTANCE = 35; // Distance between NPCs in queue line (increased from 25 to prevent overlap)
+        this.QUEUE_DISTANCE = 10; // Distance between NPCs in queue line
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
     }
 
@@ -273,6 +273,10 @@ class NPC extends Entity {
             // Check if it's time to exit
             if (this.target.canExit(this)) {
                 this.state = 'exiting';
+                // Remove from queue and reset escalator timer
+                this.target.removeFromQueue(this);
+                this.target.exitTimer = 0;
+                this.queuePosition = null;
             }
         }
     }

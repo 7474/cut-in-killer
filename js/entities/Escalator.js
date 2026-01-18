@@ -36,11 +36,6 @@ class Escalator extends Entity {
 
     update(deltaTime) {
         this.exitTimer += deltaTime;
-        
-        // Reset timer when NPCs exit
-        if (this.exitTimer >= this.exitInterval && this.queue.length > 0) {
-            this.exitTimer = 0;
-        }
     }
 
     render(ctx) {
