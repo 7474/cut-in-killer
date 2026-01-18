@@ -1,5 +1,13 @@
 # Cut-in Killer - GitHub Copilot Instructions
 
+## Core Concept ⭐
+
+**This is the most important section - always keep these principles in mind:**
+
+1. **Mobile-First Casual Game** - Designed specifically for smartphones in portrait orientation
+2. **Satisfying Catharsis** - The core emotion is the satisfaction of blowing away annoying mobs from everyday life (割り込みをする行儀の悪いモブ)
+3. **Single-Finger Operation** - All gameplay must be achievable with one finger (tap/touch only)
+
 ## Project Overview
 
 Cut-in Killer (カットインキラー) is a casual web-based game set on a Tokyo subway platform. Players help well-behaved NPCs (blue circles) exit safely via escalators while eliminating badly-behaved NPCs (red squares) who try to cut in line.
@@ -149,10 +157,14 @@ Maps defined in `Maps` object with:
 
 ## Mobile/Touch Support
 
+**CRITICAL: This is a mobile-first game designed for portrait smartphone usage**
+
 - Canvas sized to fit viewport: `Math.min(config.width, window.innerWidth)`
 - Touch events handled in `setupInput()` method
 - Viewport meta tag prevents zooming: `user-scalable=no`
 - Touch coordinates mapped to canvas coordinates
+- **All gameplay must work with single-finger touch operation**
+- Portrait orientation is the primary target (600x800 canvas)
 
 ## Browser Compatibility
 
@@ -170,9 +182,20 @@ Maps defined in `Maps` object with:
 ## Testing Approach
 
 - Manual testing via browser (no automated tests currently)
-- Test on mobile devices for touch interactions
+- **ALWAYS test on mobile devices or use mobile emulation for touch interactions**
 - Verify high scores persist via LocalStorage
 - Check 60 FPS performance with many NPCs
+
+### Taking Screenshots
+
+**When taking screenshots of UI changes, ALWAYS use mobile device emulation:**
+1. Open Chrome DevTools (F12)
+2. Toggle device toolbar (Ctrl+Shift+M / Cmd+Shift+M)
+3. Select a mobile device (e.g., iPhone 12 Pro, Pixel 5) or set custom dimensions to 600x800
+4. Ensure portrait orientation
+5. Then take the screenshot to show the mobile experience
+
+This is crucial because the game is designed for smartphone portrait mode.
 
 ## Common Patterns
 
@@ -216,15 +239,20 @@ const dist = Utils.distance(x1, y1, x2, y2); // Use utility
 ## DO's and DON'Ts
 
 ### DO:
+- ✅ **ALWAYS keep the core concept in mind: mobile-first, single-finger, cathartic mob-blasting**
+- ✅ **ALWAYS use mobile device emulation when taking screenshots**
 - ✅ Use ES6 classes with extends
 - ✅ Use `deltaTime` for all time-based calculations
 - ✅ Call `super()` first in constructors
 - ✅ Check `this.active` before updating/rendering
 - ✅ Use Utils functions for math operations
 - ✅ Add Japanese text for UI elements
-- ✅ Test on mobile/touch devices
+- ✅ Test on mobile/touch devices or emulators
+- ✅ Design for portrait orientation (600x800)
 
 ### DON'T:
+- ❌ **Break the single-finger operation principle**
+- ❌ **Forget this is a mobile-first game**
 - ❌ Add external libraries without strong justification
 - ❌ Use frameworks (React, Vue, etc.)
 - ❌ Add build tools unless absolutely necessary
@@ -232,6 +260,7 @@ const dist = Utils.distance(x1, y1, x2, y2); // Use utility
 - ❌ Hardcode timing values (use deltaTime)
 - ❌ Modify existing class APIs without reviewing all usages
 - ❌ Add automated tests that require build setup
+- ❌ Add features requiring multi-touch or keyboard-only input
 
 ## Example: Adding a New Attack
 
