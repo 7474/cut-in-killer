@@ -22,11 +22,11 @@ class NPC extends Entity {
         this.queueOffset = null; // Cache queue position to avoid jittery movement
         
         // Collision constants
-        this.PERSONAL_SPACE_MULTIPLIER = 1.5; // Minimum distance = width * this value
-        this.AVOIDANCE_FORCE = 30; // Base force for pushing away from other NPCs
+        this.PERSONAL_SPACE_MULTIPLIER = 2.5; // Minimum distance = width * this value (increased from 1.5 to prevent overlap)
+        this.AVOIDANCE_FORCE = 60; // Base force for pushing away from other NPCs (increased from 30 for stronger separation)
         this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
-        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
-        this.QUEUE_WIDTH = 30; // Width of queue area on each side of escalator
+        this.QUEUE_DISTANCE = 35; // Distance between NPCs in queue line (increased from 25 to prevent overlap)
+        this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
     }
 
     setTarget(target) {
@@ -101,6 +101,9 @@ class NPC extends Entity {
                 // Move towards target
                 this.x += moveX;
                 this.y += moveY;
+                
+                // Enforce minimum spacing to prevent overlap
+                this.enforceMinimumSpacing(npcs);
                 
                 // Handle cut-in behavior for bad NPCs
                 if (this.type === 'bad' && this.pathUpdateTimer >= this.pathUpdateInterval) {
@@ -228,6 +231,35 @@ class NPC extends Entity {
                 if (dist > 0) {
                     npc.x += (dx / dist) * 5;
                     npc.y += (dy / dist) * 5;
+                }
+            }
+        }
+    }
+
+    enforceMinimumSpacing(npcs) {
+        // Ensure NPCs don't get too close to each other
+        const minSpacing = this.width * this.PERSONAL_SPACE_MULTIPLIER;
+        
+        for (const npc of npcs) {
+            if (npc === this || !npc.active || npc.state !== 'walking') continue;
+            
+            const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
+            
+            // If too close, push them apart equally
+            if (dist < minSpacing && dist > 0) {
+                const overlap = minSpacing - dist;
+                const dx = this.x - npc.x;
+                const dy = this.y - npc.y;
+                const pushDistance = overlap / 2;
+                
+                // Push this NPC away
+                this.x += (dx / dist) * pushDistance;
+                this.y += (dy / dist) * pushDistance;
+                
+                // Push other NPC away (only if it's not in queue already)
+                if (npc.state === 'walking') {
+                    npc.x -= (dx / dist) * pushDistance;
+                    npc.y -= (dy / dist) * pushDistance;
                 }
             }
         }
