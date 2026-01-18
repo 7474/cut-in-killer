@@ -12,15 +12,15 @@ class Platform extends Entity {
     }
 
     drawRailroadSleepers(ctx, point) {
-        // Sleepers (railroad ties)
+        // Sleepers (railroad ties) - horizontal bars across vertical track
         ctx.strokeStyle = '#2c3e50';
         ctx.lineWidth = 1;
-        const sleeperCount = 15;
+        const sleeperCount = 20;
         for (let i = 0; i < sleeperCount; i++) {
-            const x = this.x + (this.width / sleeperCount) * i;
+            const y = this.y + (this.height / sleeperCount) * i;
             ctx.beginPath();
-            ctx.moveTo(x, point.y - 20);
-            ctx.lineTo(x, point.y + 20);
+            ctx.moveTo(point.x - 20, y);
+            ctx.lineTo(point.x + 20, y);
             ctx.stroke();
         }
     }
@@ -30,18 +30,18 @@ class Platform extends Entity {
         ctx.fillStyle = '#95a5a6'; // Lighter color for platforms
         ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // Draw track areas (darker - where trains run)
+        // Draw track areas (darker - where trains run) - vertical tracks
         ctx.fillStyle = '#4a5256'; // Darker color for tracks
         for (const point of this.trainSpawnPoints) {
             ctx.fillRect(
-                this.x,
-                point.y - this.trackWidth / 2,
-                this.width,
-                this.trackWidth
+                point.x - this.trackWidth / 2,
+                this.y,
+                this.trackWidth,
+                this.height
             );
         }
         
-        // Draw railroad tracks (two parallel lines on each track)
+        // Draw railroad tracks (two parallel lines on each track running vertically)
         ctx.strokeStyle = '#34495e';
         ctx.lineWidth = 2;
         ctx.setLineDash([]);
@@ -49,14 +49,14 @@ class Platform extends Entity {
         for (const point of this.trainSpawnPoints) {
             // Left rail
             ctx.beginPath();
-            ctx.moveTo(this.x, point.y - 12);
-            ctx.lineTo(this.x + this.width, point.y - 12);
+            ctx.moveTo(point.x - 12, this.y);
+            ctx.lineTo(point.x - 12, this.y + this.height);
             ctx.stroke();
             
             // Right rail
             ctx.beginPath();
-            ctx.moveTo(this.x, point.y + 12);
-            ctx.lineTo(this.x + this.width, point.y + 12);
+            ctx.moveTo(point.x + 12, this.y);
+            ctx.lineTo(point.x + 12, this.y + this.height);
             ctx.stroke();
             
             // Draw sleepers
@@ -69,16 +69,16 @@ class Platform extends Entity {
         ctx.setLineDash([10, 5]);
         
         for (const point of this.trainSpawnPoints) {
-            // Upper platform edge (above track)
+            // Left platform edge (left of track)
             ctx.beginPath();
-            ctx.moveTo(this.x, point.y - this.trackWidth / 2);
-            ctx.lineTo(this.x + this.width, point.y - this.trackWidth / 2);
+            ctx.moveTo(point.x - this.trackWidth / 2, this.y);
+            ctx.lineTo(point.x - this.trackWidth / 2, this.y + this.height);
             ctx.stroke();
             
-            // Lower platform edge (below track)
+            // Right platform edge (right of track)
             ctx.beginPath();
-            ctx.moveTo(this.x, point.y + this.trackWidth / 2);
-            ctx.lineTo(this.x + this.width, point.y + this.trackWidth / 2);
+            ctx.moveTo(point.x + this.trackWidth / 2, this.y);
+            ctx.lineTo(point.x + this.trackWidth / 2, this.y + this.height);
             ctx.stroke();
         }
         
@@ -87,10 +87,10 @@ class Platform extends Entity {
 
     getTrainSpawnPoint(index = 0) {
         if (this.trainSpawnPoints.length === 0) {
-            return { x: this.x + this.width / 2, y: this.y + 100 };
+            return { x: this.x + this.width / 2, y: this.y + this.height - 100 };
         }
         const point = this.trainSpawnPoints[index % this.trainSpawnPoints.length];
-        return { x: this.x + this.width / 2, y: point.y };
+        return { x: point.x, y: this.y + this.height - 100 };
     }
 
     getEscalatorPositions() {
@@ -101,20 +101,20 @@ class Platform extends Entity {
     }
 
     getTrackAreas() {
-        // Returns array of track area bounds for collision detection
+        // Returns array of track area bounds for collision detection (vertical tracks)
         return this.trainSpawnPoints.map(point => ({
-            minY: point.y - this.trackWidth / 2,
-            maxY: point.y + this.trackWidth / 2,
-            centerY: point.y
+            minX: point.x - this.trackWidth / 2,
+            maxX: point.x + this.trackWidth / 2,
+            centerX: point.x
         }));
     }
 
     isOnTrack(x, y) {
-        // Check if a position is on a track area
+        // Check if a position is on a track area (vertical tracks)
         for (const point of this.trainSpawnPoints) {
-            const minY = point.y - this.trackWidth / 2;
-            const maxY = point.y + this.trackWidth / 2;
-            if (y >= minY && y <= maxY) {
+            const minX = point.x - this.trackWidth / 2;
+            const maxX = point.x + this.trackWidth / 2;
+            if (x >= minX && x <= maxX) {
                 return true;
             }
         }
