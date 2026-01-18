@@ -34,6 +34,8 @@
 ## プレイ方法
 
 ### オンラインでプレイ
+**GitHub Pages**: https://7474.github.io/cut-in-killer/
+
 1. ブラウザで `index.html` を開く
 2. プレイしたいマップを選択
 3. 攻撃タイプを選択
