@@ -17,7 +17,7 @@
 
 ### Behavioral Design
 - **Realistic foundation** - Base behaviors on real-world physics and movement patterns
-- **Black Humor welcomed** - Exaggerated consequences are encouraged (e.g., mobs blown off platform onto train tracks and hit by passing trains)
+- **Black Humor welcome** - Exaggerated consequences are encouraged (e.g., mobs blown off platform onto train tracks and hit by passing trains)
 - **Cathartic outcomes** - Satisfying visual and behavioral feedback when eliminating badly-behaved NPCs
 - **Comedic timing** - Behaviors should feel natural but allow for humorous exaggeration
 
