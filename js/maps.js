@@ -12,8 +12,8 @@ const Maps = {
             { x: 250, y: 650 }  // Center-left, lower part of screen
         ],
         escalatorPositions: [
-            { x: 450, y: 80 },  // Right platform exit (first)
-            { x: 450, y: 140 }  // Right platform exit (second, stacked vertically for capacity)
+            { x: 360, y: 80 },  // Right platform exit (left)
+            { x: 500, y: 80 }   // Right platform exit (right)
         ],
         trainInterval: 10, // seconds between trains
         gameDuration: 120 // 2 minutes
@@ -31,9 +31,9 @@ const Maps = {
             { x: 400, y: 650 }   // Right track
         ],
         escalatorPositions: [
-            { x: 270, y: 80 },   // Center-left exit (moved from track edge)
-            { x: 300, y: 80 },   // Center exit
-            { x: 330, y: 80 }    // Center-right exit (moved from track edge)
+            { x: 255, y: 80 },   // Center-left exit
+            { x: 305, y: 80 },   // Center exit
+            { x: 355, y: 80 }    // Center-right exit
         ],
         trainInterval: 8,
         gameDuration: 120
@@ -54,8 +54,8 @@ const Maps = {
         escalatorPositions: [
             { x: 60, y: 80 },    // Left platform exit
             { x: 225, y: 80 },   // Platform between tracks 1 & 2
-            { x: 375, y: 80 },   // Platform between tracks 2 & 3 (first exit)
-            { x: 375, y: 140 },  // Platform between tracks 2 & 3 (second exit, stacked vertically for capacity)
+            { x: 355, y: 80 },   // Platform between tracks 2 & 3 (left)
+            { x: 405, y: 80 },   // Platform between tracks 2 & 3 (right)
             { x: 540, y: 80 }    // Right platform exit
         ],
         trainInterval: 6,
