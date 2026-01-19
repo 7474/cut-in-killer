@@ -4,7 +4,20 @@ class Train extends Entity {
     constructor(x, y, arrivalTime) {
         super(x, y);
         this.width = 40;   // Narrow (horizontal, perpendicular to movement)
-        this.height = 150; // Long (vertical, parallel to movement direction)
+        
+        // Multi-car train configuration constants
+        const MIN_CARS = 3;
+        const MAX_CARS = 6;
+        const CAR_LENGTH = 80;
+        const CAR_GAP = 8;
+        
+        this.carCount = Utils.randomInt(MIN_CARS, MAX_CARS); // Random number of cars
+        this.carLength = CAR_LENGTH; // Length of each car (80 pixels each, vs previous fixed 150 total)
+        this.carGap = CAR_GAP; // Gap between cars
+        this.WINDOWS_PER_CAR = 3; // Windows per car
+        this.DOORS_PER_CAR = 2; // Doors per car
+        this.height = this.carCount * this.carLength + (this.carCount - 1) * this.carGap; // Total train length
+        
         this.color = '#95a5a6';
         this.state = 'arriving'; // arriving, stopped, departing
         this.arrivalTime = arrivalTime;
@@ -32,7 +45,9 @@ class Train extends Entity {
         
         for (let i = 0; i < count; i++) {
             const type = Math.random() < goodRatio ? 'good' : 'bad';
-            const offsetY = Utils.randomFloat(-60, 60); // Spread along train length (vertical)
+            // Spread passengers along the entire train length (all cars)
+            const halfHeight = this.height / 2;
+            const offsetY = Utils.randomFloat(-halfHeight + 10, halfHeight - 10);
             // NPCs spawn on the platform (to the right of the train when train stops)
             const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
             const npc = new NPC(this.x + platformOffset, this.y + offsetY, type);
@@ -85,42 +100,61 @@ class Train extends Entity {
     render(ctx) {
         if (!this.active) return;
         
-        // Train body (wide horizontally, moving vertically)
-        ctx.fillStyle = this.color;
-        ctx.fillRect(
-            this.x - this.width / 2,
-            this.y - this.height / 2,
-            this.width,
-            this.height
-        );
+        // Calculate starting Y position for first car
+        const startY = this.y - this.height / 2;
         
-        // Train windows (arranged vertically along the height)
-        ctx.fillStyle = '#34495e';
-        const windowCount = 5;
-        const windowWidth = 25;
-        const windowHeight = 20;
-        const spacing = this.height / (windowCount + 1);
-        
-        for (let i = 0; i < windowCount; i++) {
+        // Draw each car with gaps
+        for (let carIndex = 0; carIndex < this.carCount; carIndex++) {
+            const carY = startY + carIndex * (this.carLength + this.carGap);
+            
+            // Train car body
+            ctx.fillStyle = this.color;
             ctx.fillRect(
-                this.x - windowWidth / 2,
-                this.y - this.height / 2 + spacing * (i + 1) - windowHeight / 2,
-                windowWidth,
-                windowHeight
+                this.x - this.width / 2,
+                carY,
+                this.width,
+                this.carLength
             );
-        }
-        
-        // Train doors (when stopped) - on the right side (toward platform)
-        if (this.state === 'stopped') {
-            ctx.fillStyle = '#2ecc71';
-            const doorCount = 3;
-            const doorSpacing = this.height / (doorCount + 1);
-            for (let i = 0; i < doorCount; i++) {
+            
+            // Train windows (arranged vertically along the car)
+            ctx.fillStyle = '#34495e';
+            const windowCount = this.WINDOWS_PER_CAR;
+            const windowWidth = 25;
+            const windowHeight = 15;
+            const spacing = this.carLength / (windowCount + 1);
+            
+            for (let i = 0; i < windowCount; i++) {
                 ctx.fillRect(
-                    this.x + this.width / 2 - 2,
-                    this.y - this.height / 2 + doorSpacing * (i + 1) - 8,
-                    5,
-                    16
+                    this.x - windowWidth / 2,
+                    carY + spacing * (i + 1) - windowHeight / 2,
+                    windowWidth,
+                    windowHeight
+                );
+            }
+            
+            // Train doors (when stopped) - on the right side (toward platform)
+            if (this.state === 'stopped') {
+                ctx.fillStyle = '#2ecc71';
+                const doorCount = this.DOORS_PER_CAR;
+                const doorSpacing = this.carLength / (doorCount + 1);
+                for (let i = 0; i < doorCount; i++) {
+                    ctx.fillRect(
+                        this.x + this.width / 2 - 2,
+                        carY + doorSpacing * (i + 1) - 8,
+                        5,
+                        16
+                    );
+                }
+            }
+            
+            // Car connectors (darker rectangles in the gaps) - not for the last car
+            if (carIndex < this.carCount - 1) {
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(
+                    this.x - this.width / 2 + 5,
+                    carY + this.carLength,
+                    this.width - 10,
+                    this.carGap
                 );
             }
         }
