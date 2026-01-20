@@ -239,56 +239,56 @@ body {
     transform: translateX(-50%);
     width: 90%;
     max-width: 300px;
-    background: rgba(0, 0, 0, 0.85);
-    padding: 15px;
-    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px;
+    border-radius: 8px;
     z-index: 5;
     pointer-events: none;
 }
 
 .cooldown-label {
     color: white;
-    font-size: 0.9em;
+    font-size: 0.75em;
     text-align: center;
-    margin-bottom: 8px;
-    font-weight: bold;
-    opacity: 0.9;
+    margin-bottom: 5px;
+    font-weight: normal;
+    opacity: 0.7;
 }
 
 .cooldown-bar-container {
     width: 100%;
-    height: 30px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
     overflow: hidden;
     position: relative;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .cooldown-bar {
     height: 100%;
     background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
-    border-radius: 15px;
+    border-radius: 10px;
     transition: width 0.15s ease-out, background 0.3s;
-    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+    box-shadow: none;
 }
 
 .cooldown-bar.cooling {
     background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
-    box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+    box-shadow: none;
 }
 
 .cooldown-text {
     color: white;
-    font-size: 1.1em;
+    font-size: 0.9em;
     text-align: center;
-    margin-top: 8px;
-    font-weight: bold;
+    margin-top: 5px;
+    font-weight: normal;
 }
 
 .cooldown-text.ready {
     color: #2ecc71;
-    text-shadow: 0 0 10px rgba(46, 204, 113, 0.8);
+    text-shadow: none;
 }
 
 .cooldown-text.cooling {
