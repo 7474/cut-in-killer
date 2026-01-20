@@ -29,6 +29,7 @@ class NPC extends Entity {
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead (slightly larger than QUEUE_DISTANCE)
         this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
+        this.ENTRANCE_OFFSET = 10; // Distance below escalator to target for entrance approach
     }
 
     setTarget(target) {
@@ -76,7 +77,7 @@ class NPC extends Entity {
                 // Bad NPCs: Take path to escalator entrance (bottom)
                 // Target a position at the bottom entrance of the escalator
                 targetX = this.target.x;
-                targetY = this.target.y + this.target.height / 2 + 10; // Just below escalator
+                targetY = this.target.y + this.target.height / 2 + this.ENTRANCE_OFFSET; // Just below escalator
             }
             
             const dx = targetX - this.x;

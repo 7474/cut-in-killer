@@ -42,8 +42,9 @@ class Escalator extends Entity {
         // Check if NPC is approaching from the entrance direction
         // For bottom entrance: NPC must be below the escalator AND within horizontal bounds
         if (this.entranceDirection === 'bottom') {
-            // Check Y position: NPC must be at or below the entrance zone
+            // Check Y position: NPC must be at or below the escalator's bottom edge
             const escalatorBottom = this.y + this.height / 2;
+            // Allow entry if NPC is within entrance zone (at or slightly above bottom edge)
             const inEntranceZone = npcY >= escalatorBottom - this.entranceZoneSize;
             
             // Check X position: NPC must be within the escalator width
@@ -54,8 +55,8 @@ class Escalator extends Entity {
             return inEntranceZone && withinHorizontalBounds;
         }
         
-        // Default: allow entry (shouldn't reach here with current config)
-        return true;
+        // For unsupported entrance directions, deny entry
+        return false;
     }
 
     update(deltaTime) {
