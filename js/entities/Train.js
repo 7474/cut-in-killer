@@ -8,7 +8,7 @@ class Train extends Entity {
         // Multi-car train configuration constants
         const MIN_CARS = 3;
         const MAX_CARS = 6;
-        const CAR_LENGTH = 80;
+        const CAR_LENGTH = 120; // Increased from 80 to make trains more realistic
         const CAR_GAP = 8;
         
         this.carCount = Utils.randomInt(MIN_CARS, MAX_CARS); // Random number of cars
@@ -49,8 +49,10 @@ class Train extends Entity {
             const halfHeight = this.height / 2;
             const offsetY = Utils.randomFloat(-halfHeight + 10, halfHeight - 10);
             // NPCs spawn on the platform (to the right of the train when train stops)
+            // Widen spawn area horizontally (increased from DOOR_CLEARANCE to DOOR_CLEARANCE + random spread)
             const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
-            const npc = new NPC(this.x + platformOffset, this.y + offsetY, type);
+            const horizontalSpread = Utils.randomFloat(0, 30); // Add 0-30 pixels horizontal spread
+            const npc = new NPC(this.x + platformOffset + horizontalSpread, this.y + offsetY, type);
             this.passengers.push(npc);
         }
     }
