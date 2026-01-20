@@ -233,17 +233,7 @@ body {
 }
 
 #cooldown-indicator {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 300px;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 10px;
-    border-radius: 8px;
-    z-index: 5;
-    pointer-events: none;
+    display: none;
 }
 
 .cooldown-label {

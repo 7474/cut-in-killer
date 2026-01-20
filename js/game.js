@@ -293,6 +293,41 @@ class Game {
                 this.ctx.fill();
             }
         }
+        
+        // Render cooldown indicator at bottom-left (only when cooling)
+        if (this.attack) {
+            const cooldownPercent = this.attack.getCooldownPercent();
+            if (cooldownPercent < 1) {
+                const centerX = 40;
+                const centerY = this.canvas.height - 40;
+                const radius = 25;
+                
+                // Background circle
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Progress arc
+                this.ctx.strokeStyle = '#e74c3c';
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    centerX, centerY, radius - 2,
+                    -Math.PI / 2,
+                    -Math.PI / 2 + Math.PI * 2 * cooldownPercent
+                );
+                this.ctx.stroke();
+                
+                // Remaining time text
+                const remainingTime = this.attack.cooldownTimer;
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = 'bold 14px sans-serif';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(remainingTime.toFixed(1), centerX, centerY);
+            }
+        }
     }
 
     updateHUD() {
@@ -301,31 +336,5 @@ class Game {
             Utils.formatTime(Math.max(0, this.gameTime - this.time));
         document.getElementById('current-attack').textContent = 
             this.attack ? this.attack.name : '-';
-        
-        // Update cooldown indicator
-        if (this.attack) {
-            const cooldownPercent = this.attack.getCooldownPercent();
-            const cooldownBar = document.getElementById('cooldown-bar');
-            const cooldownText = document.getElementById('cooldown-text');
-            
-            if (!cooldownBar || !cooldownText) return;
-            
-            // Update bar width
-            cooldownBar.style.width = (cooldownPercent * 100) + '%';
-            
-            // Update bar color class
-            if (cooldownPercent >= 1) {
-                cooldownBar.classList.remove('cooling');
-                cooldownText.classList.remove('cooling');
-                cooldownText.classList.add('ready');
-                cooldownText.textContent = '準備完了';
-            } else {
-                cooldownBar.classList.add('cooling');
-                cooldownText.classList.add('cooling');
-                cooldownText.classList.remove('ready');
-                const remainingTime = this.attack.cooldownTimer;
-                cooldownText.textContent = remainingTime.toFixed(1) + '秒';
-            }
-        }
     }
 }
