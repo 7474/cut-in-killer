@@ -30,6 +30,7 @@ class NPC extends Entity {
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead (slightly larger than QUEUE_DISTANCE)
         this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
+        this.ENTRANCE_OFFSET = 10; // Distance below escalator to target for entrance approach
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
     }
 
@@ -75,9 +76,10 @@ class NPC extends Entity {
                 targetX = this.target.x + this.queueOffset.x;
                 targetY = this.target.y + this.queueOffset.y;
             } else {
-                // Bad NPCs: Take shortest path directly to escalator
+                // Bad NPCs: Take path to escalator entrance (bottom)
+                // Target a position at the bottom entrance of the escalator
                 targetX = this.target.x;
-                targetY = this.target.y;
+                targetY = this.target.y + this.target.height / 2 + this.ENTRANCE_OFFSET; // Just below escalator
             }
             
             const dx = targetX - this.x;
@@ -114,9 +116,15 @@ class NPC extends Entity {
                     this.pathUpdateTimer = 0;
                 }
             } else {
-                // Reached escalator
-                this.state = 'queuing';
-                this.queuePosition = this.target.addToQueue(this);
+                // Reached escalator - check if approaching from valid entrance
+                if (this.target.canEnterFromPosition(this.x, this.y)) {
+                    // Valid entrance - transition to queuing
+                    this.state = 'queuing';
+                    this.queuePosition = this.target.addToQueue(this);
+                } else {
+                    // Invalid entrance - stay in walking state and keep trying to reach entrance
+                    // The NPC will continue to try to get to the escalator from a valid position
+                }
             }
         }
     }
