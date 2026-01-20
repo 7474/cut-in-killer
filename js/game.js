@@ -298,38 +298,39 @@ class Game {
         if (this.attack) {
             const cooldownPercent = this.attack.getCooldownPercent();
             if (cooldownPercent < 1) {
-                const centerX = 60;
-                const centerY = this.canvas.height - 60;
-                const radius = 40;
+                // Position it well within visible bounds - higher up from bottom
+                const centerX = 70;
+                const centerY = this.canvas.height - 100;
+                const radius = 50;
                 
-                // Background circle
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                // Background circle - more opaque
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
                 this.ctx.fill();
                 
-                // Border for better visibility
-                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                this.ctx.lineWidth = 2;
+                // Border for better visibility - brighter
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                this.ctx.lineWidth = 3;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
                 this.ctx.stroke();
                 
-                // Progress arc
-                this.ctx.strokeStyle = '#e74c3c';
-                this.ctx.lineWidth = 5;
+                // Progress arc - thicker and brighter
+                this.ctx.strokeStyle = '#ff4444';
+                this.ctx.lineWidth = 6;
                 this.ctx.beginPath();
                 this.ctx.arc(
-                    centerX, centerY, radius - 4,
+                    centerX, centerY, radius - 5,
                     -Math.PI / 2,
                     -Math.PI / 2 + Math.PI * 2 * cooldownPercent
                 );
                 this.ctx.stroke();
                 
-                // Remaining time text
+                // Remaining time text - larger and brighter
                 const remainingTime = this.attack.cooldownTimer;
-                this.ctx.fillStyle = 'white';
-                this.ctx.font = 'bold 16px sans-serif';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = 'bold 20px sans-serif';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
                 this.ctx.fillText(remainingTime.toFixed(1), centerX, centerY);
