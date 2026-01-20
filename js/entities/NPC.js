@@ -283,14 +283,9 @@ class NPC extends Entity {
         
         if (targetPosition < 0) return null; // We're first in queue
         
-        // Find NPC at the target position
-        for (const npc of this.target.queue) {
-            if (npc === this) continue;
-            
-            const npcPosition = this.target.queue.indexOf(npc);
-            if (npcPosition === targetPosition) {
-                return npc;
-            }
+        // Directly access the NPC at the target position
+        if (targetPosition < this.target.queue.length) {
+            return this.target.queue[targetPosition];
         }
         
         return null;
@@ -315,10 +310,8 @@ class NPC extends Entity {
                         const dy = npcAhead.y - this.y;
                         const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
                         
-                        if (distAhead > 0) {
-                            this.x += (dx / distAhead) * moveDistance;
-                            this.y += (dy / distAhead) * moveDistance;
-                        }
+                        this.x += (dx / distAhead) * moveDistance;
+                        this.y += (dy / distAhead) * moveDistance;
                     }
                 } else {
                     // No NPC ahead, move toward escalator position
@@ -329,10 +322,8 @@ class NPC extends Entity {
                         const dy = this.target.y - this.y;
                         const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
                         
-                        if (distToEscalator > 0) {
-                            this.x += (dx / distToEscalator) * moveDistance;
-                            this.y += (dy / distToEscalator) * moveDistance;
-                        }
+                        this.x += (dx / distToEscalator) * moveDistance;
+                        this.y += (dy / distToEscalator) * moveDistance;
                     }
                 }
             }
