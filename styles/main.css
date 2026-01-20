@@ -295,6 +295,40 @@ body {
     color: #e74c3c;
 }
 
+.menu-footer {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    width: 90%;
+    max-width: 400px;
+    display: flex;
+    justify-content: center;
+}
+
+.github-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    text-decoration: none;
+    font-size: 1em;
+    transition: all 0.3s;
+}
+
+.github-link:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.github-link svg {
+    flex-shrink: 0;
+}
+
 @media (max-width: 600px) {
     #menu-screen h1 {
         font-size: 2em;
@@ -308,5 +342,10 @@ body {
         min-width: 100px;
         padding: 12px 20px;
         font-size: 1em;
+    }
+    
+    .github-link {
+        font-size: 0.9em;
+        padding: 8px 16px;
     }
 }
