@@ -73,9 +73,10 @@ class NPC extends Entity {
                 targetX = this.target.x + this.queueOffset.x;
                 targetY = this.target.y + this.queueOffset.y;
             } else {
-                // Bad NPCs: Take shortest path directly to escalator
+                // Bad NPCs: Take path to escalator entrance (bottom)
+                // Target a position at the bottom entrance of the escalator
                 targetX = this.target.x;
-                targetY = this.target.y;
+                targetY = this.target.y + this.target.height / 2 + 10; // Just below escalator
             }
             
             const dx = targetX - this.x;
@@ -112,9 +113,15 @@ class NPC extends Entity {
                     this.pathUpdateTimer = 0;
                 }
             } else {
-                // Reached escalator
-                this.state = 'queuing';
-                this.queuePosition = this.target.addToQueue(this);
+                // Reached escalator - check if approaching from valid entrance
+                if (this.target.canEnterFromPosition(this.x, this.y)) {
+                    // Valid entrance - transition to queuing
+                    this.state = 'queuing';
+                    this.queuePosition = this.target.addToQueue(this);
+                } else {
+                    // Invalid entrance - stay in walking state and keep trying to reach entrance
+                    // The NPC will continue to try to get to the escalator from a valid position
+                }
             }
         }
     }

@@ -10,6 +10,10 @@ class Escalator extends Entity {
         this.queue = [];
         this.exitInterval = 2; // seconds between exits
         this.exitTimer = 0;
+        
+        // Entrance configuration - fixed at bottom for now
+        this.entranceDirection = 'bottom'; // Only allow entry from bottom
+        this.entranceZoneSize = 30; // How far from bottom edge NPCs can enter
     }
 
     addToQueue(npc) {
@@ -32,6 +36,26 @@ class Escalator extends Entity {
         
         // Only first few NPCs in queue can exit
         return index < this.capacity && this.exitTimer >= this.exitInterval;
+    }
+
+    canEnterFromPosition(npcX, npcY) {
+        // Check if NPC is approaching from the entrance direction
+        // For bottom entrance: NPC must be below the escalator AND within horizontal bounds
+        if (this.entranceDirection === 'bottom') {
+            // Check Y position: NPC must be at or below the entrance zone
+            const escalatorBottom = this.y + this.height / 2;
+            const inEntranceZone = npcY >= escalatorBottom - this.entranceZoneSize;
+            
+            // Check X position: NPC must be within the escalator width
+            const escalatorLeft = this.x - this.width / 2;
+            const escalatorRight = this.x + this.width / 2;
+            const withinHorizontalBounds = npcX >= escalatorLeft && npcX <= escalatorRight;
+            
+            return inEntranceZone && withinHorizontalBounds;
+        }
+        
+        // Default: allow entry (shouldn't reach here with current config)
+        return true;
     }
 
     update(deltaTime) {
