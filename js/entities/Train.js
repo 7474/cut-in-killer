@@ -12,7 +12,7 @@ class Train extends Entity {
         const CAR_GAP = 8;
         
         this.carCount = Utils.randomInt(MIN_CARS, MAX_CARS); // Random number of cars
-        this.carLength = CAR_LENGTH; // Length of each car (80 pixels each, vs previous fixed 150 total)
+        this.carLength = CAR_LENGTH; // Length of each car (120 pixels each, vs previous 80 pixels)
         this.carGap = CAR_GAP; // Gap between cars
         this.WINDOWS_PER_CAR = 3; // Windows per car
         this.DOORS_PER_CAR = 2; // Doors per car
