@@ -298,9 +298,9 @@ class Game {
         if (this.attack) {
             const cooldownPercent = this.attack.getCooldownPercent();
             if (cooldownPercent < 1) {
-                const centerX = 40;
-                const centerY = this.canvas.height - 40;
-                const radius = 25;
+                const centerX = 50;
+                const centerY = this.canvas.height - 50;
+                const radius = 30;
                 
                 // Background circle
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
