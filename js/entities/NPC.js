@@ -25,8 +25,10 @@ class NPC extends Entity {
         this.PERSONAL_SPACE_MULTIPLIER = 2.5; // Minimum distance = width * this value (increased from 1.5 to prevent overlap)
         this.AVOIDANCE_FORCE = 60; // Base force for pushing away from other NPCs (increased from 30 for stronger separation)
         this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
-        this.QUEUE_DISTANCE = 10; // Distance between NPCs in queue line
+        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line (increased from 10 for visible spacing)
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
+        this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead (slightly larger than QUEUE_DISTANCE)
+        this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
     }
 
     setTarget(target) {
@@ -271,9 +273,69 @@ class NPC extends Entity {
         }
     }
 
+    findNPCAhead() {
+        // Find the NPC directly ahead in the queue
+        if (!this.target || this.queuePosition === null) return null;
+        
+        // Look for NPCs in the same queue (targeting same escalator)
+        // that are one position ahead
+        const targetPosition = this.queuePosition - 1;
+        
+        if (targetPosition < 0) return null; // We're first in queue
+        
+        // Find NPC at the target position
+        for (const npc of this.target.queue) {
+            if (npc === this) continue;
+            
+            const npcPosition = this.target.queue.indexOf(npc);
+            if (npcPosition === targetPosition) {
+                return npc;
+            }
+        }
+        
+        return null;
+    }
+
     waitInQueue(deltaTime) {
         if (this.target && this.queuePosition !== null) {
             this.exitTime += deltaTime;
+            
+            // For good NPCs: Close gaps in the queue to allow bad NPCs to cut in
+            if (this.type === 'good') {
+                const npcAhead = this.findNPCAhead();
+                
+                if (npcAhead) {
+                    // Calculate distance to NPC ahead
+                    const distAhead = Utils.distance(this.x, this.y, npcAhead.x, npcAhead.y);
+                    
+                    // If there's a gap larger than threshold, close it
+                    if (distAhead > this.GAP_CLOSE_THRESHOLD) {
+                        // Move toward the NPC ahead
+                        const dx = npcAhead.x - this.x;
+                        const dy = npcAhead.y - this.y;
+                        const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
+                        
+                        if (distAhead > 0) {
+                            this.x += (dx / distAhead) * moveDistance;
+                            this.y += (dy / distAhead) * moveDistance;
+                        }
+                    }
+                } else {
+                    // No NPC ahead, move toward escalator position
+                    const distToEscalator = Utils.distance(this.x, this.y, this.target.x, this.target.y);
+                    
+                    if (distToEscalator > this.QUEUE_DISTANCE) {
+                        const dx = this.target.x - this.x;
+                        const dy = this.target.y - this.y;
+                        const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
+                        
+                        if (distToEscalator > 0) {
+                            this.x += (dx / distToEscalator) * moveDistance;
+                            this.y += (dy / distToEscalator) * moveDistance;
+                        }
+                    }
+                }
+            }
             
             // Check if it's time to exit
             if (this.target.canExit(this)) {
