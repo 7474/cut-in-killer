@@ -314,16 +314,18 @@ class NPC extends Entity {
                         this.y += (dy / distAhead) * moveDistance;
                     }
                 } else {
-                    // No NPC ahead, move toward escalator position
-                    const distToEscalator = Utils.distance(this.x, this.y, this.target.x, this.target.y);
+                    // No NPC ahead, move toward first queue position (below escalator)
+                    const firstQueueX = this.target.x;
+                    const firstQueueY = this.target.y + this.QUEUE_DISTANCE;
+                    const distToQueuePos = Utils.distance(this.x, this.y, firstQueueX, firstQueueY);
                     
-                    if (distToEscalator > this.QUEUE_DISTANCE) {
-                        const dx = this.target.x - this.x;
-                        const dy = this.target.y - this.y;
+                    if (distToQueuePos > 5) {  // Small threshold to avoid jitter
+                        const dx = firstQueueX - this.x;
+                        const dy = firstQueueY - this.y;
                         const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
                         
-                        this.x += (dx / distToEscalator) * moveDistance;
-                        this.y += (dy / distToEscalator) * moveDistance;
+                        this.x += (dx / distToQueuePos) * moveDistance;
+                        this.y += (dy / distToQueuePos) * moveDistance;
                     }
                 }
             }
