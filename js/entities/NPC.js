@@ -15,6 +15,7 @@ class NPC extends Entity {
         // Visual properties
         this.color = type === 'good' ? '#4ecdc4' : '#ff6b6b';
         this.shape = type === 'good' ? 'circle' : 'square';
+        this.opacity = 1.0; // Opacity for fade-out effect
         
         // AI properties
         this.pathUpdateTimer = 0;
@@ -30,6 +31,7 @@ class NPC extends Entity {
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead (slightly larger than QUEUE_DISTANCE)
         this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
         this.ENTRANCE_OFFSET = 10; // Distance below escalator to target for entrance approach
+        this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
     }
 
     setTarget(target) {
@@ -322,16 +324,18 @@ class NPC extends Entity {
                         this.y += (dy / distAhead) * moveDistance;
                     }
                 } else {
-                    // No NPC ahead, move toward escalator position
-                    const distToEscalator = Utils.distance(this.x, this.y, this.target.x, this.target.y);
+                    // No NPC ahead, move toward first queue position (below escalator)
+                    const firstQueueX = this.target.x;
+                    const firstQueueY = this.target.y + this.QUEUE_DISTANCE;
+                    const distToQueuePos = Utils.distance(this.x, this.y, firstQueueX, firstQueueY);
                     
-                    if (distToEscalator > this.QUEUE_DISTANCE) {
-                        const dx = this.target.x - this.x;
-                        const dy = this.target.y - this.y;
+                    if (distToQueuePos > this.ARRIVAL_DISTANCE) {  // Use same threshold as walking arrival
+                        const dx = firstQueueX - this.x;
+                        const dy = firstQueueY - this.y;
                         const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
                         
-                        this.x += (dx / distToEscalator) * moveDistance;
-                        this.y += (dy / distToEscalator) * moveDistance;
+                        this.x += (dx / distToQueuePos) * moveDistance;
+                        this.y += (dy / distToQueuePos) * moveDistance;
                     }
                 }
             }
@@ -348,16 +352,22 @@ class NPC extends Entity {
     }
 
     exitPlatform(deltaTime) {
-        // Move up (off screen)
-        this.y -= 100 * deltaTime;
+        // Fade out instead of moving off screen
+        // NPCs are moving to another floor, so they should fade out quickly
+        this.opacity -= deltaTime / this.FADE_DURATION;
         
-        if (this.y < -50) {
+        if (this.opacity <= 0) {
+            this.opacity = 0;
             this.active = false;
         }
     }
 
     render(ctx) {
         if (!this.active) return;
+        
+        // Apply opacity for fade-out effect
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
         
         ctx.fillStyle = this.color;
         
@@ -391,6 +401,8 @@ class NPC extends Entity {
             }
             ctx.stroke();
         }
+        
+        ctx.restore();
     }
 
     remove() {
