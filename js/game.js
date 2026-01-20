@@ -298,22 +298,29 @@ class Game {
         if (this.attack) {
             const cooldownPercent = this.attack.getCooldownPercent();
             if (cooldownPercent < 1) {
-                const centerX = 50;
-                const centerY = this.canvas.height - 50;
-                const radius = 30;
+                const centerX = 60;
+                const centerY = this.canvas.height - 60;
+                const radius = 40;
                 
                 // Background circle
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
                 this.ctx.fill();
                 
+                // Border for better visibility
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
                 // Progress arc
                 this.ctx.strokeStyle = '#e74c3c';
-                this.ctx.lineWidth = 4;
+                this.ctx.lineWidth = 5;
                 this.ctx.beginPath();
                 this.ctx.arc(
-                    centerX, centerY, radius - 2,
+                    centerX, centerY, radius - 4,
                     -Math.PI / 2,
                     -Math.PI / 2 + Math.PI * 2 * cooldownPercent
                 );
@@ -322,7 +329,7 @@ class Game {
                 // Remaining time text
                 const remainingTime = this.attack.cooldownTimer;
                 this.ctx.fillStyle = 'white';
-                this.ctx.font = 'bold 14px sans-serif';
+                this.ctx.font = 'bold 16px sans-serif';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
                 this.ctx.fillText(remainingTime.toFixed(1), centerX, centerY);
