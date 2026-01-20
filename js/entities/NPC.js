@@ -15,6 +15,7 @@ class NPC extends Entity {
         // Visual properties
         this.color = type === 'good' ? '#4ecdc4' : '#ff6b6b';
         this.shape = type === 'good' ? 'circle' : 'square';
+        this.opacity = 1.0; // Opacity for fade-out effect
         
         // AI properties
         this.pathUpdateTimer = 0;
@@ -29,6 +30,7 @@ class NPC extends Entity {
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead (slightly larger than QUEUE_DISTANCE)
         this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
+        this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
     }
 
     setTarget(target) {
@@ -340,16 +342,22 @@ class NPC extends Entity {
     }
 
     exitPlatform(deltaTime) {
-        // Move up (off screen)
-        this.y -= 100 * deltaTime;
+        // Fade out instead of moving off screen
+        // NPCs are moving to another floor, so they should fade out quickly
+        this.opacity -= deltaTime / this.FADE_DURATION;
         
-        if (this.y < -50) {
+        if (this.opacity <= 0) {
+            this.opacity = 0;
             this.active = false;
         }
     }
 
     render(ctx) {
         if (!this.active) return;
+        
+        // Apply opacity for fade-out effect
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
         
         ctx.fillStyle = this.color;
         
@@ -383,6 +391,8 @@ class NPC extends Entity {
             }
             ctx.stroke();
         }
+        
+        ctx.restore();
     }
 
     remove() {
