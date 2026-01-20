@@ -319,7 +319,7 @@ class NPC extends Entity {
                     const firstQueueY = this.target.y + this.QUEUE_DISTANCE;
                     const distToQueuePos = Utils.distance(this.x, this.y, firstQueueX, firstQueueY);
                     
-                    if (distToQueuePos > 5) {  // Small threshold to avoid jitter
+                    if (distToQueuePos > this.ARRIVAL_DISTANCE) {  // Use same threshold as walking arrival
                         const dx = firstQueueX - this.x;
                         const dy = firstQueueY - this.y;
                         const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
