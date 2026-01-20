@@ -6,13 +6,14 @@ class Train extends Entity {
         this.width = 40;   // Narrow (horizontal, perpendicular to movement)
         
         // Multi-car train configuration constants
-        const MIN_CARS = 3;
-        const MAX_CARS = 6;
-        const CAR_LENGTH = 80;
+        // Trains should occupy most of the platform vertically (like real trains)
+        const MIN_CARS = 8;
+        const MAX_CARS = 10;
+        const CAR_LENGTH = 60; // Length of each car
         const CAR_GAP = 8;
         
         this.carCount = Utils.randomInt(MIN_CARS, MAX_CARS); // Random number of cars
-        this.carLength = CAR_LENGTH; // Length of each car (80 pixels each, vs previous fixed 150 total)
+        this.carLength = CAR_LENGTH; // Length of each car
         this.carGap = CAR_GAP; // Gap between cars
         this.WINDOWS_PER_CAR = 3; // Windows per car
         this.DOORS_PER_CAR = 2; // Doors per car
@@ -23,8 +24,11 @@ class Train extends Entity {
         this.arrivalTime = arrivalTime;
         this.stopDuration = 3; // seconds
         this.timer = 0;
-        this.targetY = y; // Target Y position (stopped at platform)
-        this.startY = y + 200; // Start from bottom (below screen)
+        // Position train to stop near platform end (top), like real trains
+        // Train center positioned so the front is near escalators (y=80-100 area)
+        const PLATFORM_TOP_MARGIN = 120; // Space from top of screen to front of train
+        this.targetY = PLATFORM_TOP_MARGIN + this.height / 2; // Target Y position (stopped at platform)
+        this.startY = y + 200; // Start from bottom (below screen, y comes from spawn point)
         this.y = this.startY;
         this.endY = -this.height / 2 - 10; // Exit completely off top of screen
         this.passengers = [];
@@ -49,8 +53,10 @@ class Train extends Entity {
             const halfHeight = this.height / 2;
             const offsetY = Utils.randomFloat(-halfHeight + 10, halfHeight - 10);
             // NPCs spawn on the platform (to the right of the train when train stops)
+            // Widen spawn area horizontally (increased from DOOR_CLEARANCE to DOOR_CLEARANCE + random spread)
             const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
-            const npc = new NPC(this.x + platformOffset, this.y + offsetY, type);
+            const horizontalSpread = Utils.randomFloat(0, 30); // Add 0-30 pixels horizontal spread
+            const npc = new NPC(this.x + platformOffset + horizontalSpread, this.y + offsetY, type);
             this.passengers.push(npc);
         }
     }
