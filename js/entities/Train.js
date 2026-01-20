@@ -47,18 +47,40 @@ class Train extends Entity {
         const count = Utils.randomInt(5, 15);
         const goodRatio = Utils.randomFloat(0.5, 0.8); // 50-80% good NPCs
         
+        // Calculate all door positions
+        const doorPositions = this.getDoorPositions();
+        
         for (let i = 0; i < count; i++) {
             const type = Math.random() < goodRatio ? 'good' : 'bad';
-            // Spread passengers along the entire train length (all cars)
-            const halfHeight = this.height / 2;
-            const offsetY = Utils.randomFloat(-halfHeight + 10, halfHeight - 10);
+            
+            // Select a random door position
+            const doorPos = doorPositions[Math.floor(Math.random() * doorPositions.length)];
+            
             // NPCs spawn on the platform (to the right of the train when train stops)
-            // Widen spawn area horizontally (increased from DOOR_CLEARANCE to DOOR_CLEARANCE + random spread)
+            // Position them near the selected door with slight horizontal spread
             const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
             const horizontalSpread = Utils.randomFloat(0, 30); // Add 0-30 pixels horizontal spread
-            const npc = new NPC(this.x + platformOffset + horizontalSpread, this.y + offsetY, type);
+            const npc = new NPC(this.x + platformOffset + horizontalSpread, doorPos, type);
             this.passengers.push(npc);
         }
+    }
+    
+    getDoorPositions() {
+        // Calculate Y positions of all doors on the train
+        const doorPositions = [];
+        const startY = this.y - this.height / 2;
+        
+        for (let carIndex = 0; carIndex < this.carCount; carIndex++) {
+            const carY = startY + carIndex * (this.carLength + this.carGap);
+            const doorSpacing = this.carLength / (this.DOORS_PER_CAR + 1);
+            
+            for (let doorIndex = 0; doorIndex < this.DOORS_PER_CAR; doorIndex++) {
+                const doorY = carY + doorSpacing * (doorIndex + 1);
+                doorPositions.push(doorY);
+            }
+        }
+        
+        return doorPositions;
     }
 
     update(deltaTime) {
