@@ -136,6 +136,7 @@ class NPC extends Entity {
                 // Handle cut-in behavior for bad NPCs
                 if (this.type === 'bad' && this.pathUpdateTimer >= this.pathUpdateInterval) {
                     this.attemptCutIn(npcs);
+                    this.pathUpdateTimer = 0;
                 }
             } else {
                 // Reached escalator - stop movement
@@ -277,6 +278,10 @@ class NPC extends Entity {
         
         for (const npc of npcs) {
             if (npc === this || !npc.active || npc.state !== 'walking') continue;
+            
+            // Only handle each collision pair once (avoid double processing)
+            // Use a consistent ordering based on object identity
+            if (this > npc) continue;
             
             const dx = npc.x - this.x;
             const dy = npc.y - this.y;
