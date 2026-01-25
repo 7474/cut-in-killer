@@ -6,7 +6,6 @@ class NPC extends Entity {
         this.type = type; // 'good' or 'bad'
         this.width = 15;
         this.height = 15;
-        this.speed = type === 'good' ? 30 : 50; // bad NPCs move faster
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
         this.queuePosition = null;
@@ -22,15 +21,25 @@ class NPC extends Entity {
         this.pathUpdateInterval = 0.5; // Update path every 0.5 seconds
         this.queueOffset = null; // Cache queue position to avoid jittery movement
         
-        // Collision constants
-        this.PERSONAL_SPACE_MULTIPLIER = 2.5; // Minimum distance = width * this value (increased from 1.5 to prevent overlap)
-        this.AVOIDANCE_FORCE = 60; // Base force for pushing away from other NPCs (increased from 30 for stronger separation)
+        // Physics properties
+        this.velocity = { x: 0, y: 0 };
+        this.acceleration = { x: 0, y: 0 };
+        this.mass = type === 'good' ? 1.0 : 1.2; // Bad NPCs are slightly heavier
+        this.maxSpeed = type === 'good' ? 30 : 50; // bad NPCs move faster
+        this.maxForce = type === 'good' ? 200 : 300; // Maximum steering force
+        
+        // Physics constants
+        this.FRICTION = 0.85; // Velocity damping (0 = no movement, 1 = no friction)
+        this.PERSONAL_SPACE_MULTIPLIER = 2.5; // Minimum distance = width * this value
+        this.SEPARATION_FORCE = 150; // Force for pushing away from other NPCs
         this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
-        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line (increased from 10 for visible spacing)
-        this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
-        this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead (slightly larger than QUEUE_DISTANCE)
+        this.ARRIVAL_RADIUS = 50; // Distance at which NPC starts to slow down
+        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
+        this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
+        this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
         this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
+        this.COLLISION_DAMPING = 0.5; // How much velocity is retained after collision (0 = stop, 1 = elastic)
     }
 
     setTarget(target) {
@@ -85,107 +94,235 @@ class NPC extends Entity {
             const dist = Math.sqrt(dx * dx + dy * dy);
             
             if (dist > this.ARRIVAL_DISTANCE) {
-                // Calculate desired movement
-                let moveX = (dx / dist) * this.speed * deltaTime;
-                let moveY = (dy / dist) * this.speed * deltaTime;
+                // Reset acceleration for this frame
+                this.acceleration = { x: 0, y: 0 };
                 
-                // Apply collision avoidance
-                const avoidance = this.calculateCollisionAvoidance(npcs);
-                moveX += avoidance.x * deltaTime;
-                moveY += avoidance.y * deltaTime;
+                // Apply seek force (attraction to target)
+                const seekForce = this.seek(targetX, targetY, dist);
+                this.applyForce(seekForce);
                 
-                // Apply track avoidance if platform info is available
+                // Apply separation force (repulsion from other NPCs)
+                const separationForce = this.separate(npcs);
+                this.applyForce(separationForce);
+                
+                // Apply track avoidance force if platform info is available
                 if (platform) {
-                    const trackAvoidance = this.avoidTracks(platform, moveX, moveY);
-                    moveX = trackAvoidance.x;
-                    moveY = trackAvoidance.y;
+                    const trackAvoidance = this.avoidTracksForce(platform);
+                    this.applyForce(trackAvoidance);
                 }
                 
-                // Move towards target
-                this.x += moveX;
-                this.y += moveY;
+                // Update velocity based on acceleration
+                this.velocity.x += this.acceleration.x * deltaTime;
+                this.velocity.y += this.acceleration.y * deltaTime;
                 
-                // Enforce minimum spacing to prevent overlap
-                this.enforceMinimumSpacing(npcs);
+                // Apply friction
+                this.velocity.x *= this.FRICTION;
+                this.velocity.y *= this.FRICTION;
+                
+                // Limit velocity to max speed
+                const speed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
+                if (speed > this.maxSpeed) {
+                    this.velocity.x = (this.velocity.x / speed) * this.maxSpeed;
+                    this.velocity.y = (this.velocity.y / speed) * this.maxSpeed;
+                }
+                
+                // Update position
+                this.x += this.velocity.x * deltaTime;
+                this.y += this.velocity.y * deltaTime;
+                
+                // Handle collisions with other NPCs
+                this.handleCollisions(npcs);
                 
                 // Handle cut-in behavior for bad NPCs
                 if (this.type === 'bad' && this.pathUpdateTimer >= this.pathUpdateInterval) {
                     this.attemptCutIn(npcs);
-                    this.pathUpdateTimer = 0;
                 }
             } else {
-                // Reached escalator
+                // Reached escalator - stop movement
+                this.velocity = { x: 0, y: 0 };
                 this.state = 'queuing';
                 this.queuePosition = this.target.addToQueue(this);
             }
         }
     }
 
-    calculateCollisionAvoidance(npcs) {
-        const avoidanceForce = { x: 0, y: 0 };
-        const personalSpace = this.width * this.PERSONAL_SPACE_MULTIPLIER;
+    seek(targetX, targetY, dist) {
+        // Calculate desired velocity to reach target
+        const desired = {
+            x: (targetX - this.x) / dist * this.maxSpeed,
+            y: (targetY - this.y) / dist * this.maxSpeed
+        };
+        
+        // Apply arrival behavior - slow down as we approach target
+        if (dist < this.ARRIVAL_RADIUS) {
+            const m = dist / this.ARRIVAL_RADIUS;
+            desired.x *= m;
+            desired.y *= m;
+        }
+        
+        // Steering force = desired - current velocity
+        const steer = {
+            x: desired.x - this.velocity.x,
+            y: desired.y - this.velocity.y
+        };
+        
+        // Limit steering force
+        const steerMag = Math.sqrt(steer.x * steer.x + steer.y * steer.y);
+        if (steerMag > this.maxForce) {
+            steer.x = (steer.x / steerMag) * this.maxForce;
+            steer.y = (steer.y / steerMag) * this.maxForce;
+        }
+        
+        return steer;
+    }
+
+    separate(npcs) {
+        // Separation force to avoid crowding
+        const desiredSeparation = this.width * this.PERSONAL_SPACE_MULTIPLIER;
+        const steer = { x: 0, y: 0 };
+        let count = 0;
         
         for (const npc of npcs) {
             if (npc === this || !npc.active || npc.state !== 'walking') continue;
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
-            // If too close, push away
-            if (dist < personalSpace && dist > 0) {
-                const dx = this.x - npc.x;
-                const dy = this.y - npc.y;
-                const pushStrength = (personalSpace - dist) / personalSpace;
+            if (dist > 0 && dist < desiredSeparation) {
+                // Calculate vector pointing away from neighbor
+                const diff = {
+                    x: this.x - npc.x,
+                    y: this.y - npc.y
+                };
                 
-                // Bad NPCs are more aggressive: lower avoidance multiplier means they push through more
-                // Good NPCs respect personal space: higher multiplier means stronger avoidance
-                const avoidanceMultiplier = this.type === 'bad' ? 0.5 : 1.0;
+                // Weight by distance (closer = stronger force)
+                const weight = 1.0 - (dist / desiredSeparation);
+                diff.x = (diff.x / dist) * weight;
+                diff.y = (diff.y / dist) * weight;
                 
-                avoidanceForce.x += (dx / dist) * pushStrength * this.AVOIDANCE_FORCE * avoidanceMultiplier;
-                avoidanceForce.y += (dy / dist) * pushStrength * this.AVOIDANCE_FORCE * avoidanceMultiplier;
+                steer.x += diff.x;
+                steer.y += diff.y;
+                count++;
             }
         }
         
-        return avoidanceForce;
+        if (count > 0) {
+            steer.x /= count;
+            steer.y /= count;
+        }
+        
+        const mag = Math.sqrt(steer.x * steer.x + steer.y * steer.y);
+        if (mag > 0) {
+            // Implement Reynolds: Steering = Desired - Velocity
+            steer.x = (steer.x / mag) * this.maxSpeed - this.velocity.x;
+            steer.y = (steer.y / mag) * this.maxSpeed - this.velocity.y;
+            
+            // Apply separation force multiplier
+            // Bad NPCs are more aggressive: lower multiplier means less separation
+            // Good NPCs respect personal space: higher multiplier means stronger separation
+            const separationMultiplier = this.type === 'bad' ? 0.6 : 1.0;
+            steer.x *= separationMultiplier;
+            steer.y *= separationMultiplier;
+        }
+        
+        return steer;
     }
 
-    avoidTracks(platform, moveX, moveY) {
-        // Avoid walking on track areas - stay on platforms
-        const newY = this.y + moveY;
+    applyForce(force) {
+        // F = ma, so a = F/m
+        this.acceleration.x += force.x / this.mass;
+        this.acceleration.y += force.y / this.mass;
+    }
+
+    avoidTracksForce(platform) {
+        // Generate a force to avoid track areas
         const trackAreas = platform.getTrackAreas();
+        const avoidForce = { x: 0, y: 0 };
         
         for (const track of trackAreas) {
-            // Check if we're about to enter or are in a track area
-            if (newY >= track.minY && newY <= track.maxY) {
-                // We're in or entering a track area - redirect movement
-                
+            // Check if we're near or in a track area
+            if (this.y >= track.minY - 30 && this.y <= track.maxY + 30) {
                 // Determine which side of the track is closer
                 const distToTop = Math.abs(this.y - track.minY);
                 const distToBottom = Math.abs(this.y - track.maxY);
                 
-                // If already on track, push towards nearest edge
+                // Apply strong repulsion force away from track
+                const repulsionStrength = 500;
+                
                 if (this.y >= track.minY && this.y <= track.maxY) {
+                    // Inside track - push towards nearest edge
                     if (distToTop < distToBottom) {
-                        // Push towards top (away from track, negative Y direction)
-                        moveY = Math.min(moveY, track.minY - this.y - 2);
+                        avoidForce.y -= repulsionStrength;
                     } else {
-                        // Push towards bottom (away from track, positive Y direction)
-                        moveY = Math.max(moveY, track.maxY - this.y + 2);
+                        avoidForce.y += repulsionStrength;
                     }
-                } else {
-                    // Prevent entering track - stop Y movement
-                    if (newY > this.y && newY >= track.minY) {
-                        // Moving down into track - stop at top edge
-                        moveY = Math.max(0, track.minY - this.y - 1);
-                    } else if (newY < this.y && newY <= track.maxY) {
-                        // Moving up into track - stop at bottom edge
-                        moveY = Math.min(0, track.maxY - this.y + 1);
-                    }
+                } else if (this.y < track.minY && distToTop < 30) {
+                    // Above track, getting close - push up
+                    const proximity = 1.0 - (distToTop / 30);
+                    avoidForce.y -= repulsionStrength * proximity;
+                } else if (this.y > track.maxY && distToBottom < 30) {
+                    // Below track, getting close - push down
+                    const proximity = 1.0 - (distToBottom / 30);
+                    avoidForce.y += repulsionStrength * proximity;
                 }
                 break;
             }
         }
         
-        return { x: moveX, y: moveY };
+        return avoidForce;
+    }
+
+    handleCollisions(npcs) {
+        // Handle collisions with impulse-based resolution
+        const minDistance = this.width * this.PERSONAL_SPACE_MULTIPLIER;
+        
+        for (const npc of npcs) {
+            if (npc === this || !npc.active || npc.state !== 'walking') continue;
+            
+            const dx = npc.x - this.x;
+            const dy = npc.y - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // Check for collision
+            if (dist < minDistance && dist > 0.1) {
+                // Calculate collision normal
+                const nx = dx / dist;
+                const ny = dy / dist;
+                
+                // Calculate relative velocity
+                const relVelX = npc.velocity.x - this.velocity.x;
+                const relVelY = npc.velocity.y - this.velocity.y;
+                
+                // Calculate relative velocity in collision normal direction
+                const velAlongNormal = relVelX * nx + relVelY * ny;
+                
+                // Don't resolve if velocities are separating
+                if (velAlongNormal > 0) continue;
+                
+                // Calculate restitution (bounciness)
+                const restitution = this.COLLISION_DAMPING;
+                
+                // Calculate impulse scalar
+                const impulseScalar = -(1 + restitution) * velAlongNormal;
+                const totalMass = this.mass + npc.mass;
+                const impulse = impulseScalar / totalMass;
+                
+                // Apply impulse to velocities
+                this.velocity.x -= impulse * npc.mass * nx;
+                this.velocity.y -= impulse * npc.mass * ny;
+                npc.velocity.x += impulse * this.mass * nx;
+                npc.velocity.y += impulse * this.mass * ny;
+                
+                // Positional correction to prevent overlap
+                const overlap = minDistance - dist;
+                const correctionPercent = 0.5; // How much to correct (split 50/50)
+                const correction = overlap * correctionPercent;
+                
+                this.x -= correction * nx;
+                this.y -= correction * ny;
+                npc.x += correction * nx;
+                npc.y += correction * ny;
+            }
+        }
     }
 
     getQueueLinePosition(npcs) {
@@ -227,50 +364,24 @@ class NPC extends Entity {
     }
 
     attemptCutIn(npcs) {
-        // Bad NPCs try to push past good NPCs
+        // Bad NPCs try to push past good NPCs using physics
         for (const npc of npcs) {
             if (npc === this || !npc.active) continue;
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
             if (npc.type === 'good' && dist < 30) {
-                // Push the good NPC slightly
+                // Apply a pushing force to the good NPC
                 const dx = npc.x - this.x;
                 const dy = npc.y - this.y;
                 if (dist > 0) {
-                    npc.x += (dx / dist) * 5;
-                    npc.y += (dy / dist) * 5;
+                    const pushForce = 100; // Force magnitude
+                    const forceX = (dx / dist) * pushForce;
+                    const forceY = (dy / dist) * pushForce;
+                    
+                    // Apply force to the good NPC (they get pushed)
+                    npc.applyForce({ x: forceX, y: forceY });
                 }
-            }
-        }
-    }
-
-    enforceMinimumSpacing(npcs) {
-        // Ensure NPCs don't get too close to each other
-        const minSpacing = this.width * this.PERSONAL_SPACE_MULTIPLIER;
-        
-        for (const npc of npcs) {
-            if (npc === this || !npc.active || npc.state !== 'walking') continue;
-            
-            const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
-            
-            // If too close, push them apart equally
-            // Skip if distance is too small to avoid division issues
-            if (dist < minSpacing && dist > 0.1) {
-                const overlap = minSpacing - dist;
-                const dx = this.x - npc.x;
-                const dy = this.y - npc.y;
-                const pushDistance = overlap / 2;
-                
-                // Normalize and push both NPCs away from each other
-                const normalizedDx = dx / dist;
-                const normalizedDy = dy / dist;
-                
-                this.x += normalizedDx * pushDistance;
-                this.y += normalizedDy * pushDistance;
-                
-                npc.x -= normalizedDx * pushDistance;
-                npc.y -= normalizedDy * pushDistance;
             }
         }
     }
@@ -296,6 +407,10 @@ class NPC extends Entity {
     waitInQueue(deltaTime) {
         if (this.target && this.queuePosition !== null) {
             this.exitTime += deltaTime;
+            
+            // Gradually slow down velocity while queuing
+            this.velocity.x *= 0.9;
+            this.velocity.y *= 0.9;
             
             // For good NPCs: Close gaps in the queue to allow bad NPCs to cut in
             if (this.type === 'good') {
@@ -399,6 +514,7 @@ class NPC extends Entity {
 
     remove() {
         this.active = false;
+        this.velocity = { x: 0, y: 0 };
         if (this.target) {
             this.target.removeFromQueue(this);
         }
