@@ -307,7 +307,7 @@ class Game {
             }
         }
         
-        // Render permanent cooldown indicator in bottom right corner
+        // Render permanent cooldown indicator in bottom left corner
         this.renderCooldownIndicator();
     }
     
@@ -316,7 +316,7 @@ class Game {
         
         const cooldownPercent = this.attack.getCooldownPercent();
         const radius = 35;
-        const x = this.canvas.width - radius - 20;
+        const x = radius + 20;
         const y = this.canvas.height - radius - 20;
         
         // Background circle (dark)
@@ -372,31 +372,5 @@ class Game {
             Utils.formatTime(Math.max(0, this.gameTime - this.time));
         document.getElementById('current-attack').textContent = 
             this.attack ? this.attack.name : '-';
-        
-        // Update cooldown indicator
-        if (this.attack) {
-            const cooldownPercent = this.attack.getCooldownPercent();
-            const cooldownBar = document.getElementById('cooldown-bar');
-            const cooldownText = document.getElementById('cooldown-text');
-            
-            if (!cooldownBar || !cooldownText) return;
-            
-            // Update bar width
-            cooldownBar.style.width = (cooldownPercent * 100) + '%';
-            
-            // Update bar color class
-            if (cooldownPercent >= 1) {
-                cooldownBar.classList.remove('cooling');
-                cooldownText.classList.remove('cooling');
-                cooldownText.classList.add('ready');
-                cooldownText.textContent = '準備完了';
-            } else {
-                cooldownBar.classList.add('cooling');
-                cooldownText.classList.add('cooling');
-                cooldownText.classList.remove('ready');
-                const remainingTime = this.attack.cooldownTimer;
-                cooldownText.textContent = remainingTime.toFixed(1) + '秒';
-            }
-        }
     }
 }
