@@ -34,7 +34,7 @@ class NPC extends Entity {
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
         this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
-        this.REPULSION_STRENGTH = type === 'good' ? 10 : 5; // Good NPCs avoid more (reduced from 800/400)
+        this.REPULSION_STRENGTH = type === 'good' ? 150 : 80; // Good NPCs avoid more, balanced for smooth movement
         this.CUT_IN_FORCE_MULTIPLIER = 0.002; // Force multiplier for cut-in behavior
         this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
         
@@ -54,7 +54,7 @@ class NPC extends Entity {
             this.physicsBody = physicsWorld.createCircleBody(
                 this.x, this.y, this.width / 2,
                 {
-                    frictionAir: 0.4, // Higher damping for realistic movement
+                    frictionAir: 0.2, // Moderate damping for smooth human-like movement
                     density: this.type === 'bad' ? 0.0015 : 0.001, // Bad NPCs are "heavier"
                     restitution: 0.2
                 }
@@ -63,7 +63,7 @@ class NPC extends Entity {
             this.physicsBody = physicsWorld.createRectangleBody(
                 this.x, this.y, this.width, this.height,
                 {
-                    frictionAir: 0.4,
+                    frictionAir: 0.2, // Moderate damping for smooth human-like movement
                     density: this.type === 'bad' ? 0.0015 : 0.001,
                     restitution: 0.2
                 }
