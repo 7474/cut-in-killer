@@ -15,6 +15,7 @@ class Escalator extends Entity {
         this.entranceDirection = 'bottom'; // bottom, top, left, right
         this.entranceZoneHeight = 80; // Zone height from which NPCs can enter
         this.entranceZoneWidth = this.width + 40; // Zone width (escalator width + buffer)
+        this.debugShowEntranceZone = false; // Set to true to visualize entrance zone
     }
 
     addToQueue(npc) {
@@ -77,7 +78,7 @@ class Escalator extends Entity {
         if (!this.active) return;
         
         // Draw entrance zone (semi-transparent) for debugging
-        if (this.entranceDirection === 'bottom') {
+        if (this.debugShowEntranceZone && this.entranceDirection === 'bottom') {
             ctx.fillStyle = 'rgba(46, 204, 113, 0.15)'; // Light green transparent
             ctx.fillRect(
                 this.x - this.entranceZoneWidth / 2,
