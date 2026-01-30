@@ -29,6 +29,7 @@ class NPC extends Entity {
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
         this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
+        this.ENTRANCE_TARGET_OFFSET = 40; // Distance below escalator to target for entrance approach
         
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
@@ -109,7 +110,7 @@ class NPC extends Entity {
             let targetX, targetY;
             
             if (this.type === 'good') {
-                // Good NPCs: Form a queue line approaching the escalator
+                // Good NPCs: Form a queue line approaching the escalator from below
                 if (!this.queueOffset || this.pathUpdateTimer >= this.pathUpdateInterval) {
                     this.queueOffset = this.getQueueLinePosition(npcs);
                     this.pathUpdateTimer = 0;
@@ -117,9 +118,16 @@ class NPC extends Entity {
                 targetX = this.target.x + this.queueOffset.x;
                 targetY = this.target.y + this.queueOffset.y;
             } else {
-                // Bad NPCs: Take shortest path directly to escalator
-                targetX = this.target.x;
-                targetY = this.target.y;
+                // Bad NPCs: Approach entrance zone first, then escalator
+                if (!this.target.isInEntranceZone(this.x, this.y)) {
+                    // Not in entrance zone, target a position in the entrance zone
+                    targetX = this.target.x;
+                    targetY = this.target.y + this.target.height / 2 + this.ENTRANCE_TARGET_OFFSET;
+                } else {
+                    // Already in entrance zone, can approach escalator directly
+                    targetX = this.target.x;
+                    targetY = this.target.y;
+                }
             }
             
             const dx = targetX - this.x;
@@ -139,13 +147,23 @@ class NPC extends Entity {
                     this.pathUpdateTimer = 0;
                 }
             } else {
-                // Reached escalator
-                this.state = 'queuing';
-                this.queuePosition = this.target.addToQueue(this);
-                
-                // Stop physics movement
-                if (this.physicsBody && typeof Matter !== 'undefined') {
-                    Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                // Close to target position, check if in valid entrance zone
+                if (this.target.isInEntranceZone(this.x, this.y)) {
+                    // In valid entrance zone, can enter queue
+                    this.state = 'queuing';
+                    this.queuePosition = this.target.addToQueue(this);
+                    
+                    // Stop physics movement
+                    if (this.physicsBody && typeof Matter !== 'undefined') {
+                        Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                    }
+                } else {
+                    // Not in entrance zone yet, continue moving toward entrance zone
+                    // Update target to entrance zone position
+                    if (this.type === 'bad' && this.pathUpdateTimer >= this.pathUpdateInterval) {
+                        // Force bad NPCs to retarget entrance zone
+                        this.pathUpdateTimer = 0;
+                    }
                 }
             }
         }
