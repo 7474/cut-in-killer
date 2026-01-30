@@ -12,7 +12,7 @@ class PhysicsWorld {
         
         // Physics constants
         this.REPULSION_DISTANCE_THRESHOLD = 100; // Distance threshold for repulsion force
-        this.MOVE_FORCE_MULTIPLIER = 0.1; // Force multiplier for movement
+        this.MOVE_FORCE_MULTIPLIER = 0.01; // Force multiplier for movement (reduced from 0.1)
         this.MIN_DISTANCE_THRESHOLD = 1; // Minimum distance to prevent division by zero
         
         // Create Matter.js engine
@@ -75,7 +75,8 @@ class PhysicsWorld {
             frictionAir: 0.3, // High air friction for damping
             restitution: 0.3,
             density: 0.001,
-            inertia: 1e10 // Very large value to effectively prevent rotation
+            angle: 0,
+            angularVelocity: 0
         };
         
         const body = Matter.Bodies.circle(x, y, radius, {
@@ -93,7 +94,8 @@ class PhysicsWorld {
             frictionAir: 0.3,
             restitution: 0.3,
             density: 0.001,
-            inertia: 1e10 // Very large value to effectively prevent rotation
+            angle: 0,
+            angularVelocity: 0
         };
         
         const body = Matter.Bodies.rectangle(x, y, width, height, {
@@ -218,8 +220,11 @@ class PhysicsWorld {
         const dy = body1.position.y - body2.position.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist > 0 && dist < this.REPULSION_DISTANCE_THRESHOLD && isFinite(dist)) {
-            const force = strength / (dist * dist); // Inverse square law
+        if (dist > this.MIN_DISTANCE_THRESHOLD && dist < this.REPULSION_DISTANCE_THRESHOLD && isFinite(dist)) {
+            // Clamp dist to prevent division by very small numbers
+            // Use larger minimum to prevent excessive forces
+            const clampedDist = Math.max(dist, 20); // Minimum distance of 20 pixels
+            const force = strength / (clampedDist * clampedDist); // Inverse square law
             const fx = (dx / dist) * force * body1.mass;
             const fy = (dy / dist) * force * body1.mass;
             
@@ -243,6 +248,34 @@ class PhysicsWorld {
             // Normal case: clamp to max timestep
             const clampedDelta = Math.min(deltaMs, this.TIME_STEP);
             Matter.Engine.update(this.engine, clampedDelta);
+        }
+        
+        // Clamp velocities to prevent numerical explosion
+        const MAX_VELOCITY = 200; // Maximum allowed velocity in pixels per second
+        const bodies = Matter.Composite.allBodies(this.world);
+        for (const body of bodies) {
+            if (body.isStatic) continue;
+            
+            const speed = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
+            if (speed > MAX_VELOCITY) {
+                const scale = MAX_VELOCITY / speed;
+                Matter.Body.setVelocity(body, {
+                    x: body.velocity.x * scale,
+                    y: body.velocity.y * scale
+                });
+            }
+            
+            // Check for NaN or Infinity or out of reasonable bounds
+            const outOfBounds = body.position.x < -1000 || body.position.x > this.width + 1000 ||
+                               body.position.y < -1000 || body.position.y > this.height + 1000;
+            
+            if (!isFinite(body.position.x) || !isFinite(body.position.y) ||
+                !isFinite(body.velocity.x) || !isFinite(body.velocity.y) || outOfBounds) {
+                console.warn('Detected invalid or out-of-bounds physics body, resetting');
+                // Reset to a safe position in the center
+                Matter.Body.setPosition(body, { x: this.width / 2, y: this.height / 2 });
+                Matter.Body.setVelocity(body, { x: 0, y: 0 });
+            }
         }
     }
     
