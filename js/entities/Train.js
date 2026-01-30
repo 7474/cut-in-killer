@@ -43,7 +43,7 @@ class Train extends Entity {
         this.departingDuration = Math.abs(this.targetY - this.endY) / this.TRAIN_SPEED;
     }
 
-    generatePassengers() {
+    generatePassengers(physicsWorld = null) {
         const count = Utils.randomInt(5, 15);
         const goodRatio = Utils.randomFloat(0.5, 0.8); // 50-80% good NPCs
         
@@ -60,7 +60,7 @@ class Train extends Entity {
             // Position them near the selected door with slight horizontal spread
             const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
             const horizontalSpread = Utils.randomFloat(0, 30); // Add 0-30 pixels horizontal spread
-            const npc = new NPC(this.x + platformOffset + horizontalSpread, doorPos, type);
+            const npc = new NPC(this.x + platformOffset + horizontalSpread, doorPos, type, physicsWorld);
             this.passengers.push(npc);
         }
     }
@@ -83,7 +83,7 @@ class Train extends Entity {
         return doorPositions;
     }
 
-    update(deltaTime) {
+    update(deltaTime, physicsWorld = null) {
         if (!this.active) return;
         
         this.timer += deltaTime;
@@ -97,7 +97,7 @@ class Train extends Entity {
                 this.timer = 0;
                 
                 if (!this.hasUnloaded) {
-                    this.generatePassengers();
+                    this.generatePassengers(physicsWorld);
                     this.hasUnloaded = true;
                 }
             }

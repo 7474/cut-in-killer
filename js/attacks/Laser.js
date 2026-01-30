@@ -9,10 +9,12 @@ class Laser extends Attack {
         this.length = 600;
         this.duration = 0.5;
         this.beams = [];
+        this.FORCE_STRENGTH = 0.02; // Directional force strength
     }
 
-    execute(x, y, npcs) {
+    execute(x, y, npcs, physicsWorld = null) {
         const hitNPCs = [];
+        const hasMatter = typeof Matter !== 'undefined';
         
         // Create laser beam going up (towards escalators)
         for (const npc of npcs) {
@@ -20,7 +22,20 @@ class Laser extends Attack {
             
             // Check if NPC is in the laser beam path
             if (Math.abs(npc.x - x) <= this.width / 2 && npc.y < y) {
-                npc.remove();
+                // Apply upward force if physics enabled
+                if (hasMatter && physicsWorld && npc.physicsBody) {
+                    const distFromCenter = Math.abs(npc.x - x);
+                    const forceMagnitude = this.FORCE_STRENGTH * (1 - distFromCenter / (this.width / 2));
+                    
+                    const force = {
+                        x: 0,
+                        y: -forceMagnitude * npc.physicsBody.mass
+                    };
+                    
+                    Matter.Body.applyForce(npc.physicsBody, npc.physicsBody.position, force);
+                }
+                
+                npc.remove(physicsWorld);
                 hitNPCs.push(npc);
             }
         }

@@ -12,14 +12,14 @@ class Attack {
         return this.cooldownTimer <= 0;
     }
 
-    use(x, y, npcs) {
+    use(x, y, npcs, physicsWorld = null) {
         if (!this.canUse()) return null;
         
         this.cooldownTimer = this.cooldown;
-        return this.execute(x, y, npcs);
+        return this.execute(x, y, npcs, physicsWorld);
     }
 
-    execute(x, y, npcs) {
+    execute(x, y, npcs, physicsWorld = null) {
         // Override in subclasses
         return [];
     }

@@ -8,17 +8,35 @@ class BodySlam extends Attack {
         this.radius = 50;
         this.duration = 0.3;
         this.effects = [];
+        this.IMPULSE_STRENGTH = 0.015; // Physics impulse strength
+        this.MIN_DISTANCE_THRESHOLD = 1; // Minimum distance to prevent division by zero
     }
 
-    execute(x, y, npcs) {
+    execute(x, y, npcs, physicsWorld = null) {
         const hitNPCs = [];
+        const hasMatter = typeof Matter !== 'undefined';
         
         for (const npc of npcs) {
             if (!npc.active) continue;
             
             const dist = Utils.distance(x, y, npc.x, npc.y);
             if (dist <= this.radius) {
-                npc.remove();
+                // Apply radial impulse if physics enabled
+                if (hasMatter && physicsWorld && npc.physicsBody) {
+                    const dx = npc.x - x;
+                    const dy = npc.y - y;
+                    const normalizedDist = Math.max(dist, this.MIN_DISTANCE_THRESHOLD);
+                    const force = this.IMPULSE_STRENGTH / (normalizedDist / this.radius);
+                    
+                    const impulse = {
+                        x: (dx / normalizedDist) * force * npc.physicsBody.mass,
+                        y: (dy / normalizedDist) * force * npc.physicsBody.mass
+                    };
+                    
+                    Matter.Body.applyForce(npc.physicsBody, npc.physicsBody.position, impulse);
+                }
+                
+                npc.remove(physicsWorld);
                 hitNPCs.push(npc);
             }
         }
