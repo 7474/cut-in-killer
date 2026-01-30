@@ -166,9 +166,8 @@ class Game {
 
     spawnTrain() {
         const spawnPoint = this.platform.getTrainSpawnPoint(this.trains.length);
-        const scaledX = spawnPoint.x * (this.canvas.width / this.mapConfig.width);
-        const scaledY = spawnPoint.y * (this.canvas.height / this.mapConfig.height);
-        const train = new Train(scaledX, scaledY, this.time);
+        // Spawn points are already scaled when platform is created, no need to scale again
+        const train = new Train(spawnPoint.x, spawnPoint.y, this.time);
         this.trains.push(train);
     }
 
