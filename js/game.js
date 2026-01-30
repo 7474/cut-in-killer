@@ -13,6 +13,9 @@ class Game {
         this.time = 0;
         this.gameTime = mapConfig.gameDuration;
         
+        // Physics world
+        this.physicsWorld = null;
+        
         // Entities
         this.platform = null;
         this.escalators = [];
@@ -37,10 +40,15 @@ class Game {
 
     init() {
         this.setupCanvas();
+        this.setupPhysics();
         this.setupPlatform();
         this.setupEscalators();
         this.setupAttack();
         this.setupInput();
+    }
+    
+    setupPhysics() {
+        this.physicsWorld = new PhysicsWorld(this.canvas.width, this.canvas.height);
     }
 
     setupCanvas() {
@@ -141,7 +149,7 @@ class Game {
     handleAttack() {
         if (!this.running) return;
         
-        const hitNPCs = this.attack.use(this.touchX, this.touchY, this.npcs);
+        const hitNPCs = this.attack.use(this.touchX, this.touchY, this.npcs, this.physicsWorld);
         
         if (hitNPCs) {
             // Calculate score changes
@@ -211,6 +219,11 @@ class Game {
             return;
         }
         
+        // Update physics world
+        if (this.physicsWorld) {
+            this.physicsWorld.update(deltaTime);
+        }
+        
         // Update train spawning
         this.trainTimer += deltaTime;
         if (this.trainTimer >= this.trainInterval) {
@@ -222,7 +235,7 @@ class Game {
         this.escalators.forEach(esc => esc.update(deltaTime));
         
         this.trains = this.trains.filter(train => {
-            train.update(deltaTime);
+            train.update(deltaTime, this.physicsWorld);
             
             // Get passengers from stopped trains
             const passengers = train.getPassengers();
@@ -232,7 +245,7 @@ class Game {
         });
         
         this.npcs = this.npcs.filter(npc => {
-            npc.update(deltaTime, this.escalators, this.npcs, this.platform);
+            npc.update(deltaTime, this.escalators, this.npcs, this.platform, this.physicsWorld);
             
             // Check if NPC exited
             if (!npc.active && npc.state === 'exiting') {

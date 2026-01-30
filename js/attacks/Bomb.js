@@ -9,9 +9,10 @@ class Bomb extends Attack {
         this.fuseTime = 1; // 1 second fuse
         this.explosionDuration = 0.5;
         this.bombs = [];
+        this.EXPLOSION_FORCE = 0.03; // Explosive force strength
     }
 
-    execute(x, y, npcs) {
+    execute(x, y, npcs, physicsWorld = null) {
         // Place bomb with fuse
         this.bombs.push({
             x: x,
@@ -21,7 +22,8 @@ class Bomb extends Attack {
             fuseTime: this.fuseTime,
             state: 'fuse', // fuse, exploding
             explosionTimer: 0,
-            npcs: npcs // Reference to check on explosion
+            npcs: npcs, // Reference to check on explosion
+            physicsWorld: physicsWorld
         });
         
         return []; // No immediate hits
@@ -49,13 +51,30 @@ class Bomb extends Attack {
     }
 
     explode(bomb) {
-        // Hit all NPCs in radius
+        // Hit all NPCs in radius with explosive force
         for (const npc of bomb.npcs) {
             if (!npc.active) continue;
             
             const dist = Utils.distance(bomb.x, bomb.y, npc.x, npc.y);
             if (dist <= bomb.radius) {
-                npc.remove();
+                // Apply radial explosive force if physics enabled
+                if (bomb.physicsWorld && npc.physicsBody) {
+                    const dx = npc.x - bomb.x;
+                    const dy = npc.y - bomb.y;
+                    const normalizedDist = Math.max(dist, 1);
+                    
+                    // Stronger force at center, weaker at edges
+                    const forceMagnitude = this.EXPLOSION_FORCE * (1 - dist / bomb.radius);
+                    
+                    const force = {
+                        x: (dx / normalizedDist) * forceMagnitude * npc.physicsBody.mass,
+                        y: (dy / normalizedDist) * forceMagnitude * npc.physicsBody.mass
+                    };
+                    
+                    Matter.Body.applyForce(npc.physicsBody, npc.physicsBody.position, force);
+                }
+                
+                npc.remove(bomb.physicsWorld);
             }
         }
     }

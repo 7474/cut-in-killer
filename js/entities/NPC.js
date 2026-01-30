@@ -1,7 +1,7 @@
 // NPC (Non-Player Character) class
 
 class NPC extends Entity {
-    constructor(x, y, type = 'good') {
+    constructor(x, y, type = 'good', physicsWorld = null) {
         super(x, y);
         this.type = type; // 'good' or 'bad'
         this.width = 15;
@@ -22,36 +22,72 @@ class NPC extends Entity {
         this.pathUpdateInterval = 0.5; // Update path every 0.5 seconds
         this.queueOffset = null; // Cache queue position to avoid jittery movement
         
-        // Collision constants
-        this.PERSONAL_SPACE_MULTIPLIER = 2.5; // Minimum distance = width * this value (increased from 1.5 to prevent overlap)
-        this.AVOIDANCE_FORCE = 60; // Base force for pushing away from other NPCs (increased from 30 for stronger separation)
+        // Physics constants
         this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
-        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line (increased from 10 for visible spacing)
-        this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator (increased from 30 for wider spacing)
-        this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead (slightly larger than QUEUE_DISTANCE)
+        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
+        this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
+        this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
         this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
+        
+        // Physics-based movement
+        this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
+        this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
+        this.REPULSION_STRENGTH = type === 'good' ? 800 : 400; // Good NPCs avoid more
+        
+        // Initialize physics body
+        if (physicsWorld) {
+            this.initPhysics(physicsWorld);
+        }
+    }
+    
+    initPhysics(physicsWorld) {
+        // Create physics body based on shape
+        if (this.shape === 'circle') {
+            this.physicsBody = physicsWorld.createCircleBody(
+                this.x, this.y, this.width / 2,
+                {
+                    frictionAir: 0.4, // Higher damping for realistic movement
+                    density: this.type === 'bad' ? 0.0015 : 0.001, // Bad NPCs are "heavier"
+                    restitution: 0.2
+                }
+            );
+        } else {
+            this.physicsBody = physicsWorld.createRectangleBody(
+                this.x, this.y, this.width, this.height,
+                {
+                    frictionAir: 0.4,
+                    density: this.type === 'bad' ? 0.0015 : 0.001,
+                    restitution: 0.2
+                }
+            );
+        }
+        
+        this.setPhysicsBody(this.physicsBody, physicsWorld);
     }
 
     setTarget(target) {
         this.target = target;
     }
 
-    update(deltaTime, escalators, npcs, platform) {
+    update(deltaTime, escalators, npcs, platform, physicsWorld) {
         if (!this.active) return;
+        
+        // Sync position from physics
+        this.syncFromPhysics();
         
         this.pathUpdateTimer += deltaTime;
         
         if (this.state === 'walking') {
-            this.walkToEscalator(deltaTime, escalators, npcs, platform);
+            this.walkToEscalator(deltaTime, escalators, npcs, platform, physicsWorld);
         } else if (this.state === 'queuing') {
-            this.waitInQueue(deltaTime);
+            this.waitInQueue(deltaTime, physicsWorld);
         } else if (this.state === 'exiting') {
-            this.exitPlatform(deltaTime);
+            this.exitPlatform(deltaTime, physicsWorld);
         }
     }
 
-    walkToEscalator(deltaTime, escalators, npcs, platform) {
+    walkToEscalator(deltaTime, escalators, npcs, platform, physicsWorld) {
         if (!this.target && escalators.length > 0) {
             // Find nearest escalator
             this.target = escalators.reduce((nearest, esc) => {
@@ -61,16 +97,15 @@ class NPC extends Entity {
             }, null);
         }
 
-        if (this.target) {
+        if (this.target && physicsWorld) {
             // Calculate target position
             let targetX, targetY;
             
             if (this.type === 'good') {
                 // Good NPCs: Form a queue line approaching the escalator
-                // Update queue offset periodically to reflect changing queue composition
                 if (!this.queueOffset || this.pathUpdateTimer >= this.pathUpdateInterval) {
                     this.queueOffset = this.getQueueLinePosition(npcs);
-                    this.pathUpdateTimer = 0;  // Reset timer after updating
+                    this.pathUpdateTimer = 0;
                 }
                 targetX = this.target.x + this.queueOffset.x;
                 targetY = this.target.y + this.queueOffset.y;
@@ -85,107 +120,48 @@ class NPC extends Entity {
             const dist = Math.sqrt(dx * dx + dy * dy);
             
             if (dist > this.ARRIVAL_DISTANCE) {
-                // Calculate desired movement
-                let moveX = (dx / dist) * this.speed * deltaTime;
-                let moveY = (dy / dist) * this.speed * deltaTime;
+                // Use physics to move towards target
+                physicsWorld.moveTowards(this.physicsBody, targetX, targetY, this.speed);
                 
-                // Apply collision avoidance
-                const avoidance = this.calculateCollisionAvoidance(npcs);
-                moveX += avoidance.x * deltaTime;
-                moveY += avoidance.y * deltaTime;
-                
-                // Apply track avoidance if platform info is available
-                if (platform) {
-                    const trackAvoidance = this.avoidTracks(platform, moveX, moveY);
-                    moveX = trackAvoidance.x;
-                    moveY = trackAvoidance.y;
-                }
-                
-                // Move towards target
-                this.x += moveX;
-                this.y += moveY;
-                
-                // Enforce minimum spacing to prevent overlap
-                this.enforceMinimumSpacing(npcs);
+                // Apply crowd avoidance forces
+                this.applyCrowdAvoidance(npcs, physicsWorld);
                 
                 // Handle cut-in behavior for bad NPCs
                 if (this.type === 'bad' && this.pathUpdateTimer >= this.pathUpdateInterval) {
-                    this.attemptCutIn(npcs);
+                    this.attemptCutIn(npcs, physicsWorld);
                     this.pathUpdateTimer = 0;
                 }
             } else {
                 // Reached escalator
                 this.state = 'queuing';
                 this.queuePosition = this.target.addToQueue(this);
+                
+                // Stop physics movement
+                if (this.physicsBody) {
+                    Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                }
             }
         }
     }
-
-    calculateCollisionAvoidance(npcs) {
-        const avoidanceForce = { x: 0, y: 0 };
-        const personalSpace = this.width * this.PERSONAL_SPACE_MULTIPLIER;
+    
+    applyCrowdAvoidance(npcs, physicsWorld) {
+        if (!this.physicsBody) return;
         
         for (const npc of npcs) {
-            if (npc === this || !npc.active || npc.state !== 'walking') continue;
+            if (npc === this || !npc.active || !npc.physicsBody) continue;
+            if (npc.state !== 'walking') continue;
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
-            // If too close, push away
-            if (dist < personalSpace && dist > 0) {
-                const dx = this.x - npc.x;
-                const dy = this.y - npc.y;
-                const pushStrength = (personalSpace - dist) / personalSpace;
-                
-                // Bad NPCs are more aggressive: lower avoidance multiplier means they push through more
-                // Good NPCs respect personal space: higher multiplier means stronger avoidance
-                const avoidanceMultiplier = this.type === 'bad' ? 0.5 : 1.0;
-                
-                avoidanceForce.x += (dx / dist) * pushStrength * this.AVOIDANCE_FORCE * avoidanceMultiplier;
-                avoidanceForce.y += (dy / dist) * pushStrength * this.AVOIDANCE_FORCE * avoidanceMultiplier;
+            // Apply repulsion if too close
+            if (dist < this.PERSONAL_SPACE) {
+                physicsWorld.applyRepulsion(
+                    this.physicsBody,
+                    npc.physicsBody,
+                    this.REPULSION_STRENGTH
+                );
             }
         }
-        
-        return avoidanceForce;
-    }
-
-    avoidTracks(platform, moveX, moveY) {
-        // Avoid walking on track areas - stay on platforms
-        const newY = this.y + moveY;
-        const trackAreas = platform.getTrackAreas();
-        
-        for (const track of trackAreas) {
-            // Check if we're about to enter or are in a track area
-            if (newY >= track.minY && newY <= track.maxY) {
-                // We're in or entering a track area - redirect movement
-                
-                // Determine which side of the track is closer
-                const distToTop = Math.abs(this.y - track.minY);
-                const distToBottom = Math.abs(this.y - track.maxY);
-                
-                // If already on track, push towards nearest edge
-                if (this.y >= track.minY && this.y <= track.maxY) {
-                    if (distToTop < distToBottom) {
-                        // Push towards top (away from track, negative Y direction)
-                        moveY = Math.min(moveY, track.minY - this.y - 2);
-                    } else {
-                        // Push towards bottom (away from track, positive Y direction)
-                        moveY = Math.max(moveY, track.maxY - this.y + 2);
-                    }
-                } else {
-                    // Prevent entering track - stop Y movement
-                    if (newY > this.y && newY >= track.minY) {
-                        // Moving down into track - stop at top edge
-                        moveY = Math.max(0, track.minY - this.y - 1);
-                    } else if (newY < this.y && newY <= track.maxY) {
-                        // Moving up into track - stop at bottom edge
-                        moveY = Math.min(0, track.maxY - this.y + 1);
-                    }
-                }
-                break;
-            }
-        }
-        
-        return { x: moveX, y: moveY };
     }
 
     getQueueLinePosition(npcs) {
@@ -195,7 +171,6 @@ class NPC extends Entity {
         const myDist = Utils.distance(this.x, this.y, this.target.x, this.target.y);
         
         // Count how many NPCs are already in line for this escalator
-        // This includes both NPCs walking to the escalator and those already queuing
         let npcsAhead = 0;
         
         for (const npc of npcs) {
@@ -204,12 +179,9 @@ class NPC extends Entity {
             
             // Count NPCs that are closer to the escalator OR already in queue
             if (npc.state === 'queuing') {
-                // NPCs already queuing are always ahead
                 npcsAhead++;
             } else if (npc.state === 'walking') {
-                // For walking NPCs, check distance
                 const theirDist = Utils.distance(npc.x, npc.y, this.target.x, this.target.y);
-                
                 if (theirDist < myDist) {
                     npcsAhead++;
                 }
@@ -217,60 +189,34 @@ class NPC extends Entity {
         }
         
         // Position in a straight line directly behind the escalator
-        // No X offset - everyone lines up at the same X position as the escalator
         const queueOffset = {
-            x: 0,  // Directly in line with escalator
-            y: this.QUEUE_DISTANCE * (npcsAhead + 1)  // Extend line downward
+            x: 0,
+            y: this.QUEUE_DISTANCE * (npcsAhead + 1)
         };
         
         return queueOffset;
     }
 
-    attemptCutIn(npcs) {
-        // Bad NPCs try to push past good NPCs
+    attemptCutIn(npcs, physicsWorld) {
+        if (!this.physicsBody || !physicsWorld) return;
+        
+        // Bad NPCs apply pushing force to nearby good NPCs
         for (const npc of npcs) {
-            if (npc === this || !npc.active) continue;
+            if (npc === this || !npc.active || !npc.physicsBody) continue;
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
-            if (npc.type === 'good' && dist < 30) {
-                // Push the good NPC slightly
+            if (npc.type === 'good' && dist < 40) {
+                // Push the good NPC
                 const dx = npc.x - this.x;
                 const dy = npc.y - this.y;
                 if (dist > 0) {
-                    npc.x += (dx / dist) * 5;
-                    npc.y += (dy / dist) * 5;
+                    const pushForce = {
+                        x: (dx / dist) * 0.002 * this.physicsBody.mass,
+                        y: (dy / dist) * 0.002 * this.physicsBody.mass
+                    };
+                    Matter.Body.applyForce(npc.physicsBody, npc.physicsBody.position, pushForce);
                 }
-            }
-        }
-    }
-
-    enforceMinimumSpacing(npcs) {
-        // Ensure NPCs don't get too close to each other
-        const minSpacing = this.width * this.PERSONAL_SPACE_MULTIPLIER;
-        
-        for (const npc of npcs) {
-            if (npc === this || !npc.active || npc.state !== 'walking') continue;
-            
-            const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
-            
-            // If too close, push them apart equally
-            // Skip if distance is too small to avoid division issues
-            if (dist < minSpacing && dist > 0.1) {
-                const overlap = minSpacing - dist;
-                const dx = this.x - npc.x;
-                const dy = this.y - npc.y;
-                const pushDistance = overlap / 2;
-                
-                // Normalize and push both NPCs away from each other
-                const normalizedDx = dx / dist;
-                const normalizedDy = dy / dist;
-                
-                this.x += normalizedDx * pushDistance;
-                this.y += normalizedDy * pushDistance;
-                
-                npc.x -= normalizedDx * pushDistance;
-                npc.y -= normalizedDy * pushDistance;
             }
         }
     }
@@ -279,13 +225,10 @@ class NPC extends Entity {
         // Find the NPC directly ahead in the queue
         if (!this.target || this.queuePosition === null) return null;
         
-        // Look for NPCs in the same queue (targeting same escalator)
-        // that are one position ahead
         const targetPosition = this.queuePosition - 1;
         
-        if (targetPosition < 0) return null; // We're first in queue
+        if (targetPosition < 0) return null;
         
-        // Directly access the NPC at the target position
         if (targetPosition < this.target.queue.length) {
             return this.target.queue[targetPosition];
         }
@@ -293,41 +236,44 @@ class NPC extends Entity {
         return null;
     }
 
-    waitInQueue(deltaTime) {
+    waitInQueue(deltaTime, physicsWorld) {
         if (this.target && this.queuePosition !== null) {
             this.exitTime += deltaTime;
             
-            // For good NPCs: Close gaps in the queue to allow bad NPCs to cut in
-            if (this.type === 'good') {
+            // For good NPCs: Close gaps in the queue
+            if (this.type === 'good' && physicsWorld) {
                 const npcAhead = this.findNPCAhead();
                 
                 if (npcAhead) {
-                    // Calculate distance to NPC ahead
                     const distAhead = Utils.distance(this.x, this.y, npcAhead.x, npcAhead.y);
                     
-                    // If there's a gap larger than threshold, close it
                     if (distAhead > this.GAP_CLOSE_THRESHOLD) {
-                        // Move toward the NPC ahead
-                        const dx = npcAhead.x - this.x;
-                        const dy = npcAhead.y - this.y;
-                        const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
-                        
-                        this.x += (dx / distAhead) * moveDistance;
-                        this.y += (dy / distAhead) * moveDistance;
+                        // Use physics to move toward NPC ahead
+                        physicsWorld.moveTowards(
+                            this.physicsBody,
+                            npcAhead.x,
+                            npcAhead.y,
+                            this.GAP_CLOSE_SPEED
+                        );
+                    } else {
+                        // Stop movement when close enough
+                        Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
                     }
                 } else {
-                    // No NPC ahead, move toward first queue position (below escalator)
+                    // No NPC ahead, move toward first queue position
                     const firstQueueX = this.target.x;
                     const firstQueueY = this.target.y + this.QUEUE_DISTANCE;
                     const distToQueuePos = Utils.distance(this.x, this.y, firstQueueX, firstQueueY);
                     
-                    if (distToQueuePos > this.ARRIVAL_DISTANCE) {  // Use same threshold as walking arrival
-                        const dx = firstQueueX - this.x;
-                        const dy = firstQueueY - this.y;
-                        const moveDistance = this.GAP_CLOSE_SPEED * deltaTime;
-                        
-                        this.x += (dx / distToQueuePos) * moveDistance;
-                        this.y += (dy / distToQueuePos) * moveDistance;
+                    if (distToQueuePos > this.ARRIVAL_DISTANCE) {
+                        physicsWorld.moveTowards(
+                            this.physicsBody,
+                            firstQueueX,
+                            firstQueueY,
+                            this.GAP_CLOSE_SPEED
+                        );
+                    } else {
+                        Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
                     }
                 }
             }
@@ -335,7 +281,6 @@ class NPC extends Entity {
             // Check if it's time to exit
             if (this.target.canExit(this)) {
                 this.state = 'exiting';
-                // Remove from queue and reset escalator timer
                 this.target.removeFromQueue(this);
                 this.target.exitTimer = 0;
                 this.queuePosition = null;
@@ -343,14 +288,13 @@ class NPC extends Entity {
         }
     }
 
-    exitPlatform(deltaTime) {
+    exitPlatform(deltaTime, physicsWorld) {
         // Fade out instead of moving off screen
-        // NPCs are moving to another floor, so they should fade out quickly
         this.opacity -= deltaTime / this.FADE_DURATION;
         
         if (this.opacity <= 0) {
             this.opacity = 0;
-            this.active = false;
+            this.destroy(physicsWorld);
         }
     }
 
@@ -397,10 +341,11 @@ class NPC extends Entity {
         ctx.restore();
     }
 
-    remove() {
-        this.active = false;
+    remove(physicsWorld) {
+        this.destroy(physicsWorld);
         if (this.target) {
             this.target.removeFromQueue(this);
         }
     }
 }
+
