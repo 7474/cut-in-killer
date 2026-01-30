@@ -24,8 +24,20 @@ class Entity {
     
     syncFromPhysics() {
         if (this.physicsBody && this.usePhysics) {
-            this.x = this.physicsBody.position.x;
-            this.y = this.physicsBody.position.y;
+            // Check for NaN or invalid positions
+            const bodyX = this.physicsBody.position.x;
+            const bodyY = this.physicsBody.position.y;
+            
+            if (isNaN(bodyX) || isNaN(bodyY) || !isFinite(bodyX) || !isFinite(bodyY)) {
+                // Physics body has invalid position - keep last known good position
+                // and stop physics updates to prevent further corruption
+                console.warn('Entity physics body has invalid position, disabling physics');
+                this.usePhysics = false;
+                return;
+            }
+            
+            this.x = bodyX;
+            this.y = bodyY;
         }
     }
     

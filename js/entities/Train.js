@@ -97,7 +97,7 @@ class Train extends Entity {
                 this.timer = 0;
                 
                 if (!this.hasUnloaded) {
-                    this.generatePassengers(physicsWorld);
+                    this.generatePassengers(null); // Disable physics for now to fix display issue
                     this.hasUnloaded = true;
                 }
             }
