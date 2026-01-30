@@ -112,9 +112,17 @@ class NPC extends Entity {
                 targetX = this.target.x + this.queueOffset.x;
                 targetY = this.target.y + this.queueOffset.y;
             } else {
-                // Bad NPCs: Take shortest path directly to escalator
-                targetX = this.target.x;
-                targetY = this.target.y;
+                // Bad NPCs: Take shortest path to entrance zone (below escalator)
+                // Instead of going directly to escalator center, go to entrance zone
+                if (!this.target.isInEntranceZone(this.x, this.y)) {
+                    // Not in entrance zone, target the entrance zone
+                    targetX = this.target.x;
+                    targetY = this.target.y + this.target.height / 2 + 40;
+                } else {
+                    // Already in entrance zone, can approach escalator directly
+                    targetX = this.target.x;
+                    targetY = this.target.y;
+                }
             }
             
             const dx = targetX - this.x;
@@ -134,14 +142,18 @@ class NPC extends Entity {
                     this.pathUpdateTimer = 0;
                 }
             } else {
-                // Reached escalator
-                this.state = 'queuing';
-                this.queuePosition = this.target.addToQueue(this);
-                
-                // Stop physics movement
-                if (this.physicsBody && typeof Matter !== 'undefined') {
-                    Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                // Check if NPC is in valid entrance zone before allowing entry
+                if (this.target.isInEntranceZone(this.x, this.y)) {
+                    // Reached escalator from valid entrance
+                    this.state = 'queuing';
+                    this.queuePosition = this.target.addToQueue(this);
+                    
+                    // Stop physics movement
+                    if (this.physicsBody && typeof Matter !== 'undefined') {
+                        Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                    }
                 }
+                // If not in entrance zone, NPC will continue trying to reach the target
             }
         }
     }

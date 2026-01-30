@@ -10,6 +10,11 @@ class Escalator extends Entity {
         this.queue = [];
         this.exitInterval = 2; // seconds between exits
         this.exitTimer = 0;
+        
+        // Entrance restriction - only allow entry from bottom
+        this.entranceDirection = 'bottom'; // bottom, top, left, right
+        this.entranceZoneHeight = 80; // Zone height from which NPCs can enter
+        this.entranceZoneWidth = this.width + 40; // Zone width (escalator width + buffer)
     }
 
     addToQueue(npc) {
@@ -33,6 +38,36 @@ class Escalator extends Entity {
         // Only first few NPCs in queue can exit
         return index < this.capacity && this.exitTimer >= this.exitInterval;
     }
+    
+    isInEntranceZone(npcX, npcY) {
+        // Check if NPC is in the valid entrance zone (bottom only)
+        // NPCs must be below the escalator and within the entrance zone
+        
+        const relativeX = npcX - this.x;
+        const relativeY = npcY - this.y;
+        
+        switch (this.entranceDirection) {
+            case 'bottom':
+                // NPC must be below the escalator (positive Y) and within horizontal bounds
+                return relativeY > this.height / 2 && 
+                       relativeY < this.height / 2 + this.entranceZoneHeight &&
+                       Math.abs(relativeX) < this.entranceZoneWidth / 2;
+            case 'top':
+                return relativeY < -this.height / 2 && 
+                       relativeY > -this.height / 2 - this.entranceZoneHeight &&
+                       Math.abs(relativeX) < this.entranceZoneWidth / 2;
+            case 'left':
+                return relativeX < -this.width / 2 && 
+                       relativeX > -this.width / 2 - this.entranceZoneHeight &&
+                       Math.abs(relativeY) < this.entranceZoneWidth / 2;
+            case 'right':
+                return relativeX > this.width / 2 && 
+                       relativeX < this.width / 2 + this.entranceZoneHeight &&
+                       Math.abs(relativeY) < this.entranceZoneWidth / 2;
+            default:
+                return true; // No restriction if direction is invalid
+        }
+    }
 
     update(deltaTime) {
         this.exitTimer += deltaTime;
@@ -40,6 +75,17 @@ class Escalator extends Entity {
 
     render(ctx) {
         if (!this.active) return;
+        
+        // Draw entrance zone (semi-transparent) for debugging
+        if (this.entranceDirection === 'bottom') {
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.15)'; // Light green transparent
+            ctx.fillRect(
+                this.x - this.entranceZoneWidth / 2,
+                this.y + this.height / 2,
+                this.entranceZoneWidth,
+                this.entranceZoneHeight
+            );
+        }
         
         // Draw escalator base
         ctx.fillStyle = this.color;
