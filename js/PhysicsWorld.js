@@ -77,6 +77,8 @@ class PhysicsWorld {
             density: 0.001,
             angle: 0,
             angularVelocity: 0
+            // Note: Not setting inertia to avoid numerical instability issues
+            // Circles don't visually rotate anyway, so this is acceptable
         };
         
         const body = Matter.Bodies.circle(x, y, radius, {
@@ -96,6 +98,8 @@ class PhysicsWorld {
             density: 0.001,
             angle: 0,
             angularVelocity: 0
+            // Note: Not setting inertia to avoid numerical instability issues
+            // Some rotation is acceptable for gameplay
         };
         
         const body = Matter.Bodies.rectangle(x, y, width, height, {
