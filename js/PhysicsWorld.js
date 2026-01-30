@@ -12,7 +12,7 @@ class PhysicsWorld {
         
         // Physics constants
         this.REPULSION_DISTANCE_THRESHOLD = 100; // Distance threshold for repulsion force
-        this.MOVE_FORCE_MULTIPLIER = 0.01; // Force multiplier for movement (reduced from 0.1)
+        this.MOVE_FORCE_MULTIPLIER = 0.05; // Force multiplier for movement - balanced for smooth human-like motion
         this.MIN_DISTANCE_THRESHOLD = 1; // Minimum distance to prevent division by zero
         
         // Create Matter.js engine
@@ -72,7 +72,7 @@ class PhysicsWorld {
     createCircleBody(x, y, radius, options = {}) {
         const defaultOptions = {
             friction: 0.1,
-            frictionAir: 0.3, // High air friction for damping
+            frictionAir: 0.2, // Moderate air friction for smooth human-like movement
             restitution: 0.3,
             density: 0.001,
             angle: 0,
@@ -93,7 +93,7 @@ class PhysicsWorld {
     createRectangleBody(x, y, width, height, options = {}) {
         const defaultOptions = {
             friction: 0.1,
-            frictionAir: 0.3,
+            frictionAir: 0.2, // Moderate air friction for smooth human-like movement
             restitution: 0.3,
             density: 0.001,
             angle: 0,
