@@ -33,9 +33,13 @@ class NPC extends Entity {
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
         this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
-        this.REPULSION_STRENGTH = type === 'good' ? 800 : 400; // Good NPCs avoid more
+        this.REPULSION_STRENGTH = type === 'good' ? 10 : 5; // Good NPCs avoid more (reduced from 800/400)
         this.CUT_IN_FORCE_MULTIPLIER = 0.002; // Force multiplier for cut-in behavior
         this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
+        
+        // Spawn protection to prevent physics explosion
+        this.spawnTime = 0;
+        this.SPAWN_PROTECTION_DURATION = 0.5; // Don't apply repulsion for first 0.5 seconds
         
         // Initialize physics body
         if (physicsWorld) {
@@ -79,6 +83,7 @@ class NPC extends Entity {
         this.syncFromPhysics();
         
         this.pathUpdateTimer += deltaTime;
+        this.spawnTime += deltaTime;
         
         if (this.state === 'walking') {
             this.walkToEscalator(deltaTime, escalators, npcs, platform, physicsWorld);
@@ -149,9 +154,15 @@ class NPC extends Entity {
     applyCrowdAvoidance(npcs, physicsWorld) {
         if (!this.physicsBody) return;
         
+        // Skip crowd avoidance during spawn protection period
+        if (this.spawnTime < this.SPAWN_PROTECTION_DURATION) return;
+        
         for (const npc of npcs) {
             if (npc === this || !npc.active || !npc.physicsBody) continue;
             if (npc.state !== 'walking') continue;
+            
+            // Also skip if the other NPC is in spawn protection
+            if (npc.spawnTime < npc.SPAWN_PROTECTION_DURATION) continue;
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
