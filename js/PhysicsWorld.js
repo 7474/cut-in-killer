@@ -233,16 +233,15 @@ class PhysicsWorld {
     update(deltaTime) {
         // Update physics engine with fixed timestep to prevent numerical instability
         // Matter.js expects milliseconds, and works best with consistent small steps
-        const FIXED_TIMESTEP = 16.667; // 60 FPS in milliseconds
         const deltaMs = deltaTime * 1000;
         
         // If deltaTime is very large (e.g., first frame, tab was inactive), 
         // only update with a single fixed timestep to prevent instability
-        if (deltaMs > FIXED_TIMESTEP * 2) {
-            Matter.Engine.update(this.engine, FIXED_TIMESTEP);
+        if (deltaMs > this.TIME_STEP * 2) {
+            Matter.Engine.update(this.engine, this.TIME_STEP);
         } else {
             // Normal case: clamp to max timestep
-            const clampedDelta = Math.min(deltaMs, FIXED_TIMESTEP);
+            const clampedDelta = Math.min(deltaMs, this.TIME_STEP);
             Matter.Engine.update(this.engine, clampedDelta);
         }
     }
