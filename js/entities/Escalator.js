@@ -201,7 +201,6 @@ class Escalator extends Entity {
         
         // Draw entrance indicator at the open side
         ctx.fillStyle = '#2ecc71'; // Green for entrance
-        const entranceIndicatorSize = 8;
         switch (this.entranceDirection) {
             case 'bottom':
                 // Draw entrance marker at bottom
