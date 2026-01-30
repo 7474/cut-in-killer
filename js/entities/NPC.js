@@ -6,7 +6,7 @@ class NPC extends Entity {
         this.type = type; // 'good' or 'bad'
         this.width = 15;
         this.height = 15;
-        this.speed = type === 'good' ? 30 : 50; // bad NPCs move faster
+        this.speed = type === 'good' ? 18 : 25; // bad NPCs move faster - realistic human walking speeds
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
         this.queuePosition = null;
@@ -27,14 +27,14 @@ class NPC extends Entity {
         this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
-        this.GAP_CLOSE_SPEED = 20; // Speed at which NPCs close gaps in the queue
+        this.GAP_CLOSE_SPEED = 15; // Speed at which NPCs close gaps in the queue - slower and more natural
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
         this.ENTRANCE_TARGET_OFFSET = 40; // Distance below escalator to target for entrance approach
         
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
         this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
-        this.REPULSION_STRENGTH = type === 'good' ? 150 : 80; // Good NPCs avoid more, balanced for smooth movement
+        this.REPULSION_STRENGTH = type === 'good' ? 30 : 15; // Good NPCs avoid more, significantly reduced to prevent physics instability with slower speeds
         this.CUT_IN_FORCE_MULTIPLIER = 0.002; // Force multiplier for cut-in behavior
         this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
         
