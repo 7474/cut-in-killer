@@ -34,7 +34,7 @@ class NPC extends Entity {
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
         this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
-        this.REPULSION_STRENGTH = type === 'good' ? 150 : 80; // Good NPCs avoid more, balanced for smooth movement
+        this.REPULSION_STRENGTH = type === 'good' ? 90 : 40; // Good NPCs avoid more, balanced proportionally with reduced speeds
         this.CUT_IN_FORCE_MULTIPLIER = 0.002; // Force multiplier for cut-in behavior
         this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
         
