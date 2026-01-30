@@ -126,6 +126,56 @@ class Escalator extends Entity {
             this.height
         );
         
+        // Draw barriers on restricted sides (not entrance)
+        ctx.fillStyle = '#e74c3c'; // Red for restricted areas
+        ctx.strokeStyle = '#c0392b';
+        ctx.lineWidth = 3;
+        
+        const barrierThickness = 4;
+        switch (this.entranceDirection) {
+            case 'bottom':
+                // Block top
+                ctx.fillRect(
+                    this.x - this.width / 2,
+                    this.y - this.height / 2,
+                    this.width,
+                    barrierThickness
+                );
+                // Block left
+                ctx.fillRect(
+                    this.x - this.width / 2,
+                    this.y - this.height / 2,
+                    barrierThickness,
+                    this.height
+                );
+                // Block right
+                ctx.fillRect(
+                    this.x + this.width / 2 - barrierThickness,
+                    this.y - this.height / 2,
+                    barrierThickness,
+                    this.height
+                );
+                break;
+            case 'top':
+                // Block bottom, left, right
+                ctx.fillRect(this.x - this.width / 2, this.y + this.height / 2 - barrierThickness, this.width, barrierThickness);
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, barrierThickness, this.height);
+                ctx.fillRect(this.x + this.width / 2 - barrierThickness, this.y - this.height / 2, barrierThickness, this.height);
+                break;
+            case 'left':
+                // Block top, bottom, right
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, barrierThickness);
+                ctx.fillRect(this.x - this.width / 2, this.y + this.height / 2 - barrierThickness, this.width, barrierThickness);
+                ctx.fillRect(this.x + this.width / 2 - barrierThickness, this.y - this.height / 2, barrierThickness, this.height);
+                break;
+            case 'right':
+                // Block top, bottom, left
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, barrierThickness);
+                ctx.fillRect(this.x - this.width / 2, this.y + this.height / 2 - barrierThickness, this.width, barrierThickness);
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, barrierThickness, this.height);
+                break;
+        }
+        
         // Draw escalator steps (animated)
         ctx.strokeStyle = '#2980b9';
         ctx.lineWidth = 2;
@@ -148,6 +198,39 @@ class Escalator extends Entity {
         ctx.lineTo(this.x + 8, this.y - this.height / 4 + 5);
         ctx.closePath();
         ctx.fill();
+        
+        // Draw entrance indicator at the open side
+        ctx.fillStyle = '#2ecc71'; // Green for entrance
+        const entranceIndicatorSize = 8;
+        switch (this.entranceDirection) {
+            case 'bottom':
+                // Draw entrance marker at bottom
+                ctx.fillRect(
+                    this.x - this.width / 2,
+                    this.y + this.height / 2 - barrierThickness,
+                    this.width,
+                    barrierThickness
+                );
+                // Draw downward pointing arrows at bottom entrance
+                for (let i = -1; i <= 1; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + i * 12, this.y + this.height / 2 + 8);
+                    ctx.lineTo(this.x + i * 12 - 4, this.y + this.height / 2 + 2);
+                    ctx.lineTo(this.x + i * 12 + 4, this.y + this.height / 2 + 2);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                break;
+            case 'top':
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, barrierThickness);
+                break;
+            case 'left':
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, barrierThickness, this.height);
+                break;
+            case 'right':
+                ctx.fillRect(this.x + this.width / 2 - barrierThickness, this.y - this.height / 2, barrierThickness, this.height);
+                break;
+        }
         
         // Draw queue count
         if (this.queue.length > 0) {
