@@ -13,8 +13,8 @@ class Escalator extends Entity {
         
         // Entrance restriction - only allow entry from bottom
         this.entranceDirection = 'bottom'; // bottom, top, left, right
-        this.entranceZoneHeight = 80; // Zone height from which NPCs can enter
-        this.entranceZoneWidth = this.width + 40; // Zone width (escalator width + buffer)
+        this.entranceZoneDepth = 80; // Zone depth extending from entrance
+        this.entranceZoneWidth = this.width + 40; // Zone width perpendicular to entrance
         this.debugShowEntranceZone = false; // Set to true to visualize entrance zone
     }
 
@@ -51,19 +51,19 @@ class Escalator extends Entity {
             case 'bottom':
                 // NPC must be below the escalator (positive Y) and within horizontal bounds
                 return relativeY > this.height / 2 && 
-                       relativeY < this.height / 2 + this.entranceZoneHeight &&
+                       relativeY < this.height / 2 + this.entranceZoneDepth &&
                        Math.abs(relativeX) < this.entranceZoneWidth / 2;
             case 'top':
                 return relativeY < -this.height / 2 && 
-                       relativeY > -this.height / 2 - this.entranceZoneHeight &&
+                       relativeY > -this.height / 2 - this.entranceZoneDepth &&
                        Math.abs(relativeX) < this.entranceZoneWidth / 2;
             case 'left':
                 return relativeX < -this.width / 2 && 
-                       relativeX > -this.width / 2 - this.entranceZoneHeight &&
+                       relativeX > -this.width / 2 - this.entranceZoneDepth &&
                        Math.abs(relativeY) < this.entranceZoneWidth / 2;
             case 'right':
                 return relativeX > this.width / 2 && 
-                       relativeX < this.width / 2 + this.entranceZoneHeight &&
+                       relativeX < this.width / 2 + this.entranceZoneDepth &&
                        Math.abs(relativeY) < this.entranceZoneWidth / 2;
             default:
                 return true; // No restriction if direction is invalid
@@ -78,14 +78,43 @@ class Escalator extends Entity {
         if (!this.active) return;
         
         // Draw entrance zone (semi-transparent) for debugging
-        if (this.debugShowEntranceZone && this.entranceDirection === 'bottom') {
+        if (this.debugShowEntranceZone) {
             ctx.fillStyle = 'rgba(46, 204, 113, 0.15)'; // Light green transparent
-            ctx.fillRect(
-                this.x - this.entranceZoneWidth / 2,
-                this.y + this.height / 2,
-                this.entranceZoneWidth,
-                this.entranceZoneHeight
-            );
+            
+            switch (this.entranceDirection) {
+                case 'bottom':
+                    ctx.fillRect(
+                        this.x - this.entranceZoneWidth / 2,
+                        this.y + this.height / 2,
+                        this.entranceZoneWidth,
+                        this.entranceZoneDepth
+                    );
+                    break;
+                case 'top':
+                    ctx.fillRect(
+                        this.x - this.entranceZoneWidth / 2,
+                        this.y - this.height / 2 - this.entranceZoneDepth,
+                        this.entranceZoneWidth,
+                        this.entranceZoneDepth
+                    );
+                    break;
+                case 'left':
+                    ctx.fillRect(
+                        this.x - this.width / 2 - this.entranceZoneDepth,
+                        this.y - this.entranceZoneWidth / 2,
+                        this.entranceZoneDepth,
+                        this.entranceZoneWidth
+                    );
+                    break;
+                case 'right':
+                    ctx.fillRect(
+                        this.x + this.width / 2,
+                        this.y - this.entranceZoneWidth / 2,
+                        this.entranceZoneDepth,
+                        this.entranceZoneWidth
+                    );
+                    break;
+            }
         }
         
         // Draw escalator base
