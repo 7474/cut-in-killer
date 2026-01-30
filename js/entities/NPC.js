@@ -34,6 +34,8 @@ class NPC extends Entity {
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
         this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
         this.REPULSION_STRENGTH = type === 'good' ? 800 : 400; // Good NPCs avoid more
+        this.CUT_IN_FORCE_MULTIPLIER = 0.002; // Force multiplier for cut-in behavior
+        this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
         
         // Initialize physics body
         if (physicsWorld) {
@@ -137,7 +139,7 @@ class NPC extends Entity {
                 this.queuePosition = this.target.addToQueue(this);
                 
                 // Stop physics movement
-                if (this.physicsBody) {
+                if (this.physicsBody && typeof Matter !== 'undefined') {
                     Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
                 }
             }
@@ -199,6 +201,7 @@ class NPC extends Entity {
 
     attemptCutIn(npcs, physicsWorld) {
         if (!this.physicsBody || !physicsWorld) return;
+        if (typeof Matter === 'undefined') return;
         
         // Bad NPCs apply pushing force to nearby good NPCs
         for (const npc of npcs) {
@@ -206,14 +209,14 @@ class NPC extends Entity {
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
-            if (npc.type === 'good' && dist < 40) {
+            if (npc.type === 'good' && dist < this.CUT_IN_DISTANCE_THRESHOLD) {
                 // Push the good NPC
                 const dx = npc.x - this.x;
                 const dy = npc.y - this.y;
                 if (dist > 0) {
                     const pushForce = {
-                        x: (dx / dist) * 0.002 * this.physicsBody.mass,
-                        y: (dy / dist) * 0.002 * this.physicsBody.mass
+                        x: (dx / dist) * this.CUT_IN_FORCE_MULTIPLIER * this.physicsBody.mass,
+                        y: (dy / dist) * this.CUT_IN_FORCE_MULTIPLIER * this.physicsBody.mass
                     };
                     Matter.Body.applyForce(npc.physicsBody, npc.physicsBody.position, pushForce);
                 }
@@ -257,7 +260,9 @@ class NPC extends Entity {
                         );
                     } else {
                         // Stop movement when close enough
-                        Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                        if (typeof Matter !== 'undefined') {
+                            Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                        }
                     }
                 } else {
                     // No NPC ahead, move toward first queue position
@@ -273,7 +278,9 @@ class NPC extends Entity {
                             this.GAP_CLOSE_SPEED
                         );
                     } else {
-                        Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                        if (typeof Matter !== 'undefined') {
+                            Matter.Body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+                        }
                     }
                 }
             }

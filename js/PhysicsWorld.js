@@ -2,8 +2,18 @@
 
 class PhysicsWorld {
     constructor(width, height) {
+        // Check if Matter.js is available
+        if (typeof Matter === 'undefined') {
+            throw new Error('Matter.js library is not loaded. Please ensure matter.min.js is included before PhysicsWorld.js');
+        }
+        
         this.width = width;
         this.height = height;
+        
+        // Physics constants
+        this.REPULSION_DISTANCE_THRESHOLD = 100; // Distance threshold for repulsion force
+        this.MOVE_FORCE_MULTIPLIER = 0.1; // Force multiplier for movement
+        this.MIN_DISTANCE_THRESHOLD = 1; // Minimum distance to prevent division by zero
         
         // Create Matter.js engine
         this.engine = Matter.Engine.create({
@@ -65,7 +75,7 @@ class PhysicsWorld {
             frictionAir: 0.3, // High air friction for damping
             restitution: 0.3,
             density: 0.001,
-            inertia: Infinity // Prevent rotation
+            inertia: 1e10 // Very large value to effectively prevent rotation
         };
         
         const body = Matter.Bodies.circle(x, y, radius, {
@@ -83,7 +93,7 @@ class PhysicsWorld {
             frictionAir: 0.3,
             restitution: 0.3,
             density: 0.001,
-            inertia: Infinity // Prevent rotation
+            inertia: 1e10 // Very large value to effectively prevent rotation
         };
         
         const body = Matter.Bodies.rectangle(x, y, width, height, {
@@ -169,8 +179,8 @@ class PhysicsWorld {
             const desiredVelY = (dy / dist) * speed;
             
             // Calculate force needed to reach desired velocity
-            const forceX = (desiredVelX - body.velocity.x) * body.mass * 0.1;
-            const forceY = (desiredVelY - body.velocity.y) * body.mass * 0.1;
+            const forceX = (desiredVelX - body.velocity.x) * body.mass * this.MOVE_FORCE_MULTIPLIER;
+            const forceY = (desiredVelY - body.velocity.y) * body.mass * this.MOVE_FORCE_MULTIPLIER;
             
             Matter.Body.applyForce(body, body.position, {
                 x: forceX,
@@ -185,7 +195,7 @@ class PhysicsWorld {
         const dy = body1.position.y - body2.position.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist > 0 && dist < 100) { // Only apply if close
+        if (dist > 0 && dist < this.REPULSION_DISTANCE_THRESHOLD) {
             const force = strength / (dist * dist); // Inverse square law
             const fx = (dx / dist) * force * body1.mass;
             const fy = (dy / dist) * force * body1.mass;

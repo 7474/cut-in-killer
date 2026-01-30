@@ -10,6 +10,7 @@ class Bomb extends Attack {
         this.explosionDuration = 0.5;
         this.bombs = [];
         this.EXPLOSION_FORCE = 0.03; // Explosive force strength
+        this.MIN_DISTANCE_THRESHOLD = 1; // Minimum distance to prevent division by zero
     }
 
     execute(x, y, npcs, physicsWorld = null) {
@@ -51,6 +52,8 @@ class Bomb extends Attack {
     }
 
     explode(bomb) {
+        const hasMatter = typeof Matter !== 'undefined';
+        
         // Hit all NPCs in radius with explosive force
         for (const npc of bomb.npcs) {
             if (!npc.active) continue;
@@ -58,10 +61,10 @@ class Bomb extends Attack {
             const dist = Utils.distance(bomb.x, bomb.y, npc.x, npc.y);
             if (dist <= bomb.radius) {
                 // Apply radial explosive force if physics enabled
-                if (bomb.physicsWorld && npc.physicsBody) {
+                if (hasMatter && bomb.physicsWorld && npc.physicsBody) {
                     const dx = npc.x - bomb.x;
                     const dy = npc.y - bomb.y;
-                    const normalizedDist = Math.max(dist, 1);
+                    const normalizedDist = Math.max(dist, this.MIN_DISTANCE_THRESHOLD);
                     
                     // Stronger force at center, weaker at edges
                     const forceMagnitude = this.EXPLOSION_FORCE * (1 - dist / bomb.radius);

@@ -30,7 +30,7 @@ class Entity {
     }
     
     syncToPhysics() {
-        if (this.physicsBody && this.usePhysics) {
+        if (this.physicsBody && this.usePhysics && typeof Matter !== 'undefined') {
             Matter.Body.setPosition(this.physicsBody, { x: this.x, y: this.y });
         }
     }
