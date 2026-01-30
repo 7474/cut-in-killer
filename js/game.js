@@ -306,6 +306,64 @@ class Game {
                 this.ctx.fill();
             }
         }
+        
+        // Render permanent cooldown indicator in bottom left corner
+        this.renderCooldownIndicator();
+    }
+    
+    renderCooldownIndicator() {
+        if (!this.attack) return;
+        
+        const cooldownPercent = this.attack.getCooldownPercent();
+        const radius = 35;
+        const x = radius + 20;
+        const y = this.canvas.height - radius - 20;
+        
+        // Background circle (dark)
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Border circle
+        this.ctx.strokeStyle = cooldownPercent >= 1 ? '#2ecc71' : '#e74c3c';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        // Cooldown fill (pie chart style)
+        if (cooldownPercent < 1) {
+            this.ctx.fillStyle = 'rgba(231, 76, 60, 0.5)';
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, y);
+            this.ctx.arc(
+                x, y, radius,
+                -Math.PI / 2,
+                -Math.PI / 2 + Math.PI * 2 * cooldownPercent
+            );
+            this.ctx.lineTo(x, y);
+            this.ctx.fill();
+        } else {
+            // Ready indicator - full green fill
+            this.ctx.fillStyle = 'rgba(46, 204, 113, 0.5)';
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // Text in center showing percentage or ready status
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        
+        if (cooldownPercent >= 1) {
+            this.ctx.fillText('準備OK', x, y);
+        } else {
+            const remainingTime = this.attack.cooldownTimer;
+            this.ctx.fillText(remainingTime.toFixed(1), x, y);
+        }
     }
 
     updateHUD() {
@@ -314,31 +372,5 @@ class Game {
             Utils.formatTime(Math.max(0, this.gameTime - this.time));
         document.getElementById('current-attack').textContent = 
             this.attack ? this.attack.name : '-';
-        
-        // Update cooldown indicator
-        if (this.attack) {
-            const cooldownPercent = this.attack.getCooldownPercent();
-            const cooldownBar = document.getElementById('cooldown-bar');
-            const cooldownText = document.getElementById('cooldown-text');
-            
-            if (!cooldownBar || !cooldownText) return;
-            
-            // Update bar width
-            cooldownBar.style.width = (cooldownPercent * 100) + '%';
-            
-            // Update bar color class
-            if (cooldownPercent >= 1) {
-                cooldownBar.classList.remove('cooling');
-                cooldownText.classList.remove('cooling');
-                cooldownText.classList.add('ready');
-                cooldownText.textContent = '準備完了';
-            } else {
-                cooldownBar.classList.add('cooling');
-                cooldownText.classList.add('cooling');
-                cooldownText.classList.remove('ready');
-                const remainingTime = this.attack.cooldownTimer;
-                cooldownText.textContent = remainingTime.toFixed(1) + '秒';
-            }
-        }
     }
 }
