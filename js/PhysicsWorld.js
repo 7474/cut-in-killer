@@ -190,19 +190,16 @@ class PhysicsWorld {
         const dist = Math.sqrt(dx * dx + dy * dy);
         
         if (dist > 0 && isFinite(dist)) {
-            // Calculate desired velocity
-            const desiredVelX = (dx / dist) * speed;
-            const desiredVelY = (dy / dist) * speed;
+            // Use direct velocity setting for more stable movement
+            // This avoids force accumulation issues
+            const velocityX = (dx / dist) * speed;
+            const velocityY = (dy / dist) * speed;
             
-            // Calculate force needed to reach desired velocity
-            const forceX = (desiredVelX - body.velocity.x) * body.mass * this.MOVE_FORCE_MULTIPLIER;
-            const forceY = (desiredVelY - body.velocity.y) * body.mass * this.MOVE_FORCE_MULTIPLIER;
-            
-            // Guard against NaN forces
-            if (isFinite(forceX) && isFinite(forceY)) {
-                Matter.Body.applyForce(body, body.position, {
-                    x: forceX,
-                    y: forceY
+            // Guard against NaN velocities
+            if (isFinite(velocityX) && isFinite(velocityY)) {
+                Matter.Body.setVelocity(body, {
+                    x: velocityX,
+                    y: velocityY
                 });
             }
         }

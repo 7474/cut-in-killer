@@ -152,8 +152,7 @@ class NPC extends Entity {
                 
                 // Handle cut-in behavior for bad NPCs
                 if (this.type === 'bad' && this.pathUpdateTimer >= this.pathUpdateInterval) {
-                    // Disabled cut-in forces to prevent physics instability
-                    // this.attemptCutIn(npcs, physicsWorld);
+                    this.attemptCutIn(npcs, physicsWorld);
                     this.pathUpdateTimer = 0;
                 }
             } else {
@@ -180,9 +179,43 @@ class NPC extends Entity {
     }
     
     applyCrowdAvoidance(npcs, physicsWorld) {
-        // Disabled custom repulsion - rely on Matter.js collision response only
-        // This prevents physics instability from force accumulation
-        return;
+        if (!this.physicsBody) return;
+        
+        // Skip crowd avoidance during spawn protection period
+        if (this.spawnTime < this.SPAWN_PROTECTION_DURATION) return;
+        
+        // Don't apply repulsion when in queue - let queue management handle it
+        if (this.state === 'queuing') return;
+        
+        for (const npc of npcs) {
+            if (npc === this || !npc.active || !npc.physicsBody) continue;
+            if (npc.state !== 'walking') continue;
+            
+            // Also skip if the other NPC is in spawn protection
+            if (npc.spawnTime < npc.SPAWN_PROTECTION_DURATION) continue;
+            
+            const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
+            
+            // Apply gentle velocity adjustment if too close
+            if (dist < this.PERSONAL_SPACE && dist > 1) {
+                // Calculate avoidance direction
+                const dx = this.x - npc.x;
+                const dy = this.y - npc.y;
+                const normalizedDx = dx / dist;
+                const normalizedDy = dy / dist;
+                
+                // Gently adjust velocity to avoid collision
+                const avoidanceStrength = (this.PERSONAL_SPACE - dist) / this.PERSONAL_SPACE * 5; // Max 5 px/s adjustment
+                
+                if (typeof Matter !== 'undefined') {
+                    const currentVel = this.physicsBody.velocity;
+                    Matter.Body.setVelocity(this.physicsBody, {
+                        x: currentVel.x + normalizedDx * avoidanceStrength,
+                        y: currentVel.y + normalizedDy * avoidanceStrength
+                    });
+                }
+            }
+        }
     }
 
     getQueueLinePosition(npcs) {
@@ -222,22 +255,23 @@ class NPC extends Entity {
         if (!this.physicsBody || !physicsWorld) return;
         if (typeof Matter === 'undefined') return;
         
-        // Bad NPCs apply pushing force to nearby good NPCs
+        // Bad NPCs apply gentle pushing to nearby good NPCs
         for (const npc of npcs) {
             if (npc === this || !npc.active || !npc.physicsBody) continue;
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
             if (npc.type === 'good' && dist < this.CUT_IN_DISTANCE_THRESHOLD) {
-                // Push the good NPC
+                // Gently push the good NPC aside using velocity adjustment
                 const dx = npc.x - this.x;
                 const dy = npc.y - this.y;
                 if (dist > 0) {
-                    const pushForce = {
-                        x: (dx / dist) * this.CUT_IN_FORCE_MULTIPLIER * this.physicsBody.mass,
-                        y: (dy / dist) * this.CUT_IN_FORCE_MULTIPLIER * this.physicsBody.mass
-                    };
-                    Matter.Body.applyForce(npc.physicsBody, npc.physicsBody.position, pushForce);
+                    const pushStrength = 3; // Gentle push of 3 px/s
+                    const currentVel = npc.physicsBody.velocity;
+                    Matter.Body.setVelocity(npc.physicsBody, {
+                        x: currentVel.x + (dx / dist) * pushStrength,
+                        y: currentVel.y + (dy / dist) * pushStrength
+                    });
                 }
             }
         }
