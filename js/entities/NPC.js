@@ -21,11 +21,11 @@ class NPC extends Entity {
         // Speed calculation based on real-world scale:
         // Train car length: 60px ≈ 20m → 3px ≈ 1m
         // Real walking speed: 1.2-1.8 m/s (normal), 1.8-2.5 m/s (rushing/bad behavior)
-        // Game scale: multiply by 3 (px/m) with further reduced multiplier for comfortable pacing
-        // Result: 2-3 px/s (good), 3-4 px/s (bad)
+        // Game scale: balanced for comfortable pacing with proper throughput
+        // Result: 4-6 px/s (good), 6-8 px/s (bad)
         this.speed = type === 'good' ? 
-            Utils.randomFloat(2, 3) :    // Good NPCs: slower normal walking pace
-            Utils.randomFloat(3, 4);     // Bad NPCs: slower rushing pace
+            Utils.randomFloat(4, 6) :    // Good NPCs: moderate walking pace
+            Utils.randomFloat(6, 8);     // Bad NPCs: faster rushing pace
         // Each NPC has individual speed variation for natural crowd dynamics
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
@@ -43,7 +43,7 @@ class NPC extends Entity {
         this.queueOffset = null; // Cache queue position to avoid jittery movement
         
         // Physics constants
-        this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
+        this.ARRIVAL_DISTANCE = 20; // Distance at which NPC is considered to have reached target - increased to allow entering queue despite crowd
         this.QUEUE_DISTANCE = 35; // Distance between NPCs in queue line - increased to reduce congestion
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
         this.GAP_CLOSE_THRESHOLD = 45; // Distance threshold to detect a gap ahead - increased for smoother flow
@@ -134,13 +134,10 @@ class NPC extends Entity {
             let targetX, targetY;
             
             if (this.type === 'good') {
-                // Good NPCs: Form a queue line approaching the escalator from below
-                if (!this.queueOffset || this.pathUpdateTimer >= this.pathUpdateInterval) {
-                    this.queueOffset = this.getQueueLinePosition(npcs);
-                    this.pathUpdateTimer = 0;
-                }
-                targetX = this.target.x + this.queueOffset.x;
-                targetY = this.target.y + this.queueOffset.y;
+                // Good NPCs: Approach escalator entrance from below
+                // Target the entrance of the escalator (bottom edge + small offset)
+                targetX = this.target.x;
+                targetY = this.target.y + this.target.height / 2 + 10; // Just inside entrance zone
             } else {
                 // Bad NPCs: Approach entrance zone first, then escalator
                 if (!this.target.isInEntranceZone(this.x, this.y)) {

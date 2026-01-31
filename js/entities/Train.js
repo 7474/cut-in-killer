@@ -44,7 +44,7 @@ class Train extends Entity {
     }
 
     generatePassengers(physicsWorld = null) {
-        const count = Utils.randomInt(3, 6); // Further reduced for stability - fewer NPCs per train
+        const count = Utils.randomInt(2, 4); // Reduced to 2-4 NPCs per train for better throughput matching
         const goodRatio = Utils.randomFloat(0.5, 0.8); // 50-80% good NPCs
         
         // Calculate all door positions - use targetY (stopped position) to ensure valid spawn points
