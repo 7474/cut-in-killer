@@ -23,10 +23,10 @@ class NPC extends Entity {
         // Real walking speed: 1.2-1.8 m/s (normal), 1.8-2.5 m/s (rushing/bad behavior)
         // Game scale: multiply by 3 (px/m) and add gameplay multiplier of 1.5x for better pacing
         // Result: 5-8 px/s (good), 8-11 px/s (bad)
-        const baseSpeed = type === 'good' ? 
+        this.speed = type === 'good' ? 
             Utils.randomFloat(5, 8) :    // Good NPCs: varied normal walking pace
             Utils.randomFloat(8, 11);     // Bad NPCs: varied rushing pace
-        this.speed = baseSpeed; // Each NPC has individual speed variation
+        // Each NPC has individual speed variation for natural crowd dynamics
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
         this.queuePosition = null;
