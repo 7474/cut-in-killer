@@ -17,7 +17,16 @@ class NPC extends Entity {
         this.type = type; // 'good' or 'bad'
         this.width = 15;
         this.height = 15;
-        this.speed = type === 'good' ? 30 : 45; // bad NPCs move faster - moderate realistic speeds
+        
+        // Speed calculation based on real-world scale:
+        // Train car length: 60px ≈ 20m → 3px ≈ 1m
+        // Real walking speed: 1.2-1.8 m/s (normal), 1.8-2.5 m/s (rushing/bad behavior)
+        // Game scale: multiply by 3 (px/m) and add gameplay multiplier of 1.5x for better pacing
+        // Result: 5-8 px/s (good), 8-11 px/s (bad)
+        const baseSpeed = type === 'good' ? 
+            Utils.randomFloat(5, 8) :    // Good NPCs: varied normal walking pace
+            Utils.randomFloat(8, 11);     // Bad NPCs: varied rushing pace
+        this.speed = baseSpeed; // Each NPC has individual speed variation
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
         this.queuePosition = null;
@@ -38,7 +47,7 @@ class NPC extends Entity {
         this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
-        this.GAP_CLOSE_SPEED = 25; // Speed at which NPCs close gaps in the queue - gentle pace
+        this.GAP_CLOSE_SPEED = this.speed * 0.8; // Speed at which NPCs close gaps - slightly slower than walking speed
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
         this.ENTRANCE_TARGET_OFFSET = 40; // Distance below escalator to target for entrance approach
         

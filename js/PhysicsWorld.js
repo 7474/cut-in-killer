@@ -272,14 +272,6 @@ class PhysicsWorld {
                 });
             }
             
-            // Additional velocity damping - gradually reduce velocity each frame
-            if (speed > 0) {
-                Matter.Body.setVelocity(body, {
-                    x: body.velocity.x * this.VELOCITY_DAMPING_FACTOR,
-                    y: body.velocity.y * this.VELOCITY_DAMPING_FACTOR
-                });
-            }
-            
             // Check for NaN or Infinity or out of reasonable bounds
             const outOfBounds = body.position.x < -1000 || body.position.x > this.width + 1000 ||
                                body.position.y < -1000 || body.position.y > this.height + 1000;
