@@ -34,8 +34,11 @@ class Game {
             totalEliminated: 0,   // Total NPCs eliminated by player
             spawnRate: 0,         // NPCs spawned per second
             exitRate: 0,          // NPCs exited per second
-            measurementStartTime: 0, // Time when we start measuring steady state
-            measurementDuration: 30  // Measure over 30 seconds after initial spawn period
+            measurementStartTime: 30, // Time (seconds from game start) when we start measuring steady state
+            measurementDuration: 30,  // Measure over 30 seconds after initial spawn period
+            spawnedDuringMeasurement: 0,
+            exitedDuringMeasurement: 0,
+            eliminatedDuringMeasurement: 0
         };
         
         // Input
