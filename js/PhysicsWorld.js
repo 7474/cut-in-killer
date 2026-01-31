@@ -12,7 +12,7 @@ class PhysicsWorld {
         
         // Physics constants
         this.REPULSION_DISTANCE_THRESHOLD = 100; // Distance threshold for repulsion force
-        this.MOVE_FORCE_MULTIPLIER = 0.05; // Force multiplier for movement - balanced for smooth human-like motion
+        this.MOVE_FORCE_MULTIPLIER = 0.1; // Reduced force multiplier to prevent physics explosions
         this.MIN_DISTANCE_THRESHOLD = 1; // Minimum distance to prevent division by zero
         
         // Create Matter.js engine
@@ -71,9 +71,9 @@ class PhysicsWorld {
     
     createCircleBody(x, y, radius, options = {}) {
         const defaultOptions = {
-            friction: 0.1,
-            frictionAir: 0.2, // Moderate air friction for smooth human-like movement
-            restitution: 0.3,
+            friction: 0.3,
+            frictionAir: 0.2, // Increased air friction for more stable movement
+            restitution: 0.1, // Lower bounce
             density: 0.001,
             angle: 0,
             angularVelocity: 0
@@ -92,9 +92,9 @@ class PhysicsWorld {
     
     createRectangleBody(x, y, width, height, options = {}) {
         const defaultOptions = {
-            friction: 0.1,
-            frictionAir: 0.2, // Moderate air friction for smooth human-like movement
-            restitution: 0.3,
+            friction: 0.3,
+            frictionAir: 0.2, // Increased air friction for more stable movement
+            restitution: 0.1, // Lower bounce
             density: 0.001,
             angle: 0,
             angularVelocity: 0
@@ -227,10 +227,15 @@ class PhysicsWorld {
         if (dist > this.MIN_DISTANCE_THRESHOLD && dist < this.REPULSION_DISTANCE_THRESHOLD && isFinite(dist)) {
             // Clamp dist to prevent division by very small numbers
             // Use larger minimum to prevent excessive forces
-            const clampedDist = Math.max(dist, 20); // Minimum distance of 20 pixels
+            const clampedDist = Math.max(dist, 15); // Minimum distance of 15 pixels for stability
             const force = strength / (clampedDist * clampedDist); // Inverse square law
-            const fx = (dx / dist) * force * body1.mass;
-            const fy = (dy / dist) * force * body1.mass;
+            
+            // Clamp the force to prevent excessive values
+            const maxForce = 0.01; // Maximum force cap for stability
+            const clampedForce = Math.min(force, maxForce);
+            
+            const fx = (dx / dist) * clampedForce * body1.mass;
+            const fy = (dy / dist) * clampedForce * body1.mass;
             
             // Guard against NaN or infinite forces
             if (isFinite(fx) && isFinite(fy)) {
@@ -255,7 +260,7 @@ class PhysicsWorld {
         }
         
         // Clamp velocities to prevent numerical explosion
-        const MAX_VELOCITY = 200; // Maximum allowed velocity in pixels per second
+        const MAX_VELOCITY = 100; // Reduced maximum velocity for stability
         const bodies = Matter.Composite.allBodies(this.world);
         for (const body of bodies) {
             if (body.isStatic) continue;
@@ -266,6 +271,15 @@ class PhysicsWorld {
                 Matter.Body.setVelocity(body, {
                     x: body.velocity.x * scale,
                     y: body.velocity.y * scale
+                });
+            }
+            
+            // Additional velocity damping - gradually reduce velocity each frame
+            if (speed > 0) {
+                const dampingFactor = 0.98; // Reduces velocity by 2% per frame
+                Matter.Body.setVelocity(body, {
+                    x: body.velocity.x * dampingFactor,
+                    y: body.velocity.y * dampingFactor
                 });
             }
             

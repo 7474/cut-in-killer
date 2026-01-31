@@ -2,11 +2,18 @@
 
 class NPC extends Entity {
     constructor(x, y, type = 'good', physicsWorld = null) {
+        // Validate position
+        if (!isFinite(x) || !isFinite(y)) {
+            console.error(`NPC created with invalid position: x=${x}, y=${y}`);
+            x = 300; // Default fallback position
+            y = 400;
+        }
+        
         super(x, y);
         this.type = type; // 'good' or 'bad'
         this.width = 15;
         this.height = 15;
-        this.speed = type === 'good' ? 18 : 25; // bad NPCs move faster - realistic human walking speeds
+        this.speed = type === 'good' ? 30 : 45; // bad NPCs move faster - moderate realistic speeds
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
         this.queuePosition = null;
@@ -27,20 +34,20 @@ class NPC extends Entity {
         this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
-        this.GAP_CLOSE_SPEED = 15; // Speed at which NPCs close gaps in the queue - slower and more natural
+        this.GAP_CLOSE_SPEED = 25; // Speed at which NPCs close gaps in the queue - gentle pace
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
         this.ENTRANCE_TARGET_OFFSET = 40; // Distance below escalator to target for entrance approach
         
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
-        this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
-        this.REPULSION_STRENGTH = type === 'good' ? 30 : 15; // Good NPCs avoid more, significantly reduced to prevent physics instability with slower speeds
-        this.CUT_IN_FORCE_MULTIPLIER = 0.002; // Force multiplier for cut-in behavior
+        this.PERSONAL_SPACE = 30; // Minimum distance to maintain from others - increased for more breathing room
+        this.REPULSION_STRENGTH = type === 'good' ? 50 : 30; // Gentler repulsion for stability
+        this.CUT_IN_FORCE_MULTIPLIER = 0.003; // Force multiplier for cut-in behavior - subtle but noticeable
         this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
         
         // Spawn protection to prevent physics explosion
         this.spawnTime = 0;
-        this.SPAWN_PROTECTION_DURATION = 0.5; // Don't apply repulsion for first 0.5 seconds
+        this.SPAWN_PROTECTION_DURATION = 1.0; // Don't apply repulsion for first 1 second - increased for stability
         
         // Initialize physics body
         if (physicsWorld) {
@@ -54,18 +61,20 @@ class NPC extends Entity {
             this.physicsBody = physicsWorld.createCircleBody(
                 this.x, this.y, this.width / 2,
                 {
-                    frictionAir: 0.2, // Moderate damping for smooth human-like movement
+                    frictionAir: 0.2, // Increased damping for more stable movement
                     density: this.type === 'bad' ? 0.0015 : 0.001, // Bad NPCs are "heavier"
-                    restitution: 0.2
+                    restitution: 0.1, // Lower bounce to reduce collision energy
+                    friction: 0.3 // Higher friction for stability
                 }
             );
         } else {
             this.physicsBody = physicsWorld.createRectangleBody(
                 this.x, this.y, this.width, this.height,
                 {
-                    frictionAir: 0.2, // Moderate damping for smooth human-like movement
+                    frictionAir: 0.2, // Increased damping for more stable movement
                     density: this.type === 'bad' ? 0.0015 : 0.001,
-                    restitution: 0.2
+                    restitution: 0.1, // Lower bounce to reduce collision energy
+                    friction: 0.3 // Higher friction for stability
                 }
             );
         }
@@ -143,7 +152,8 @@ class NPC extends Entity {
                 
                 // Handle cut-in behavior for bad NPCs
                 if (this.type === 'bad' && this.pathUpdateTimer >= this.pathUpdateInterval) {
-                    this.attemptCutIn(npcs, physicsWorld);
+                    // Disabled cut-in forces to prevent physics instability
+                    // this.attemptCutIn(npcs, physicsWorld);
                     this.pathUpdateTimer = 0;
                 }
             } else {
@@ -170,29 +180,9 @@ class NPC extends Entity {
     }
     
     applyCrowdAvoidance(npcs, physicsWorld) {
-        if (!this.physicsBody) return;
-        
-        // Skip crowd avoidance during spawn protection period
-        if (this.spawnTime < this.SPAWN_PROTECTION_DURATION) return;
-        
-        for (const npc of npcs) {
-            if (npc === this || !npc.active || !npc.physicsBody) continue;
-            if (npc.state !== 'walking') continue;
-            
-            // Also skip if the other NPC is in spawn protection
-            if (npc.spawnTime < npc.SPAWN_PROTECTION_DURATION) continue;
-            
-            const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
-            
-            // Apply repulsion if too close
-            if (dist < this.PERSONAL_SPACE) {
-                physicsWorld.applyRepulsion(
-                    this.physicsBody,
-                    npc.physicsBody,
-                    this.REPULSION_STRENGTH
-                );
-            }
-        }
+        // Disabled custom repulsion - rely on Matter.js collision response only
+        // This prevents physics instability from force accumulation
+        return;
     }
 
     getQueueLinePosition(npcs) {
