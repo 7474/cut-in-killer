@@ -21,11 +21,11 @@ class NPC extends Entity {
         // Speed calculation based on real-world scale:
         // Train car length: 60px ≈ 20m → 3px ≈ 1m
         // Real walking speed: 1.2-1.8 m/s (normal), 1.8-2.5 m/s (rushing/bad behavior)
-        // Game scale: multiply by 3 (px/m) with reduced multiplier for more comfortable pacing
-        // Result: 3-5 px/s (good), 5-7 px/s (bad)
+        // Game scale: multiply by 3 (px/m) with further reduced multiplier for comfortable pacing
+        // Result: 2-3 px/s (good), 3-4 px/s (bad)
         this.speed = type === 'good' ? 
-            Utils.randomFloat(3, 5) :    // Good NPCs: varied normal walking pace
-            Utils.randomFloat(5, 7);     // Bad NPCs: varied rushing pace
+            Utils.randomFloat(2, 3) :    // Good NPCs: slower normal walking pace
+            Utils.randomFloat(3, 4);     // Bad NPCs: slower rushing pace
         // Each NPC has individual speed variation for natural crowd dynamics
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
@@ -44,16 +44,16 @@ class NPC extends Entity {
         
         // Physics constants
         this.ARRIVAL_DISTANCE = 5; // Distance at which NPC is considered to have reached target
-        this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
+        this.QUEUE_DISTANCE = 35; // Distance between NPCs in queue line - increased to reduce congestion
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
-        this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
+        this.GAP_CLOSE_THRESHOLD = 45; // Distance threshold to detect a gap ahead - increased for smoother flow
         this.GAP_CLOSE_SPEED = this.speed * 0.8; // Speed at which NPCs close gaps - slightly slower than walking speed
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
-        this.ENTRANCE_TARGET_OFFSET = 40; // Distance below escalator to target for entrance approach
+        this.ENTRANCE_TARGET_OFFSET = 50; // Distance below escalator to target for entrance approach - increased spacing
         
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
-        this.PERSONAL_SPACE = 30; // Minimum distance to maintain from others - increased for more breathing room
+        this.PERSONAL_SPACE = 35; // Minimum distance to maintain from others - increased further to prevent crowding
         this.REPULSION_STRENGTH = type === 'good' ? 50 : 30; // Gentler repulsion for stability
         this.MAX_AVOIDANCE_VELOCITY = 5; // Maximum velocity adjustment for crowd avoidance (px/s)
         this.CUT_IN_PUSH_STRENGTH = 3; // Velocity push strength for bad NPCs cutting in (px/s)
