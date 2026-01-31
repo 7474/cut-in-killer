@@ -21,11 +21,11 @@ class NPC extends Entity {
         // Speed calculation based on real-world scale:
         // Train car length: 60px ≈ 20m → 3px ≈ 1m
         // Real walking speed: 1.2-1.8 m/s (normal), 1.8-2.5 m/s (rushing/bad behavior)
-        // Game scale: multiply by 3 (px/m) and add gameplay multiplier of 1.5x for better pacing
-        // Result: 5-8 px/s (good), 8-11 px/s (bad)
+        // Game scale: multiply by 3 (px/m) with reduced multiplier for more comfortable pacing
+        // Result: 3-5 px/s (good), 5-7 px/s (bad)
         this.speed = type === 'good' ? 
-            Utils.randomFloat(5, 8) :    // Good NPCs: varied normal walking pace
-            Utils.randomFloat(8, 11);     // Bad NPCs: varied rushing pace
+            Utils.randomFloat(3, 5) :    // Good NPCs: varied normal walking pace
+            Utils.randomFloat(5, 7);     // Bad NPCs: varied rushing pace
         // Each NPC has individual speed variation for natural crowd dynamics
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
