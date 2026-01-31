@@ -1,20 +1,20 @@
 // Escalator entity where NPCs queue and exit
 
 class Escalator extends Entity {
-    constructor(x, y, capacity = 1) {
+    constructor(x, y, capacity = 2) {
         super(x, y);
         this.width = 40;
         this.height = 60;
         this.color = '#3498db';
-        this.capacity = capacity; // How many NPCs can exit at once
+        this.capacity = capacity; // How many NPCs can exit at once - increased to 2 for better throughput
         this.queue = [];
-        this.exitInterval = 2; // seconds between exits
+        this.exitInterval = 1.0; // seconds between exits - reduced to 1.0 for faster processing
         this.exitTimer = 0;
         
         // Entrance restriction - only allow entry from bottom
         this.entranceDirection = 'bottom'; // bottom, top, left, right
-        this.entranceZoneDepth = 80; // Zone depth extending from entrance
-        this.entranceZoneWidth = this.width + 40; // Zone width perpendicular to entrance
+        this.entranceZoneDepth = 100; // Zone depth extending from entrance - increased for better spacing
+        this.entranceZoneWidth = this.width + 60; // Zone width perpendicular to entrance - increased for wider approach
         this.debugShowEntranceZone = false; // Set to true to visualize entrance zone
     }
 

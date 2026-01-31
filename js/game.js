@@ -27,6 +27,20 @@ class Game {
         this.trainTimer = 0;
         this.trainInterval = mapConfig.trainInterval;
         
+        // Throughput metrics for debugging/balancing
+        this.metrics = {
+            totalSpawned: 0,      // Total NPCs spawned
+            totalExited: 0,       // Total NPCs that exited via escalator
+            totalEliminated: 0,   // Total NPCs eliminated by player
+            spawnRate: 0,         // NPCs spawned per second
+            exitRate: 0,          // NPCs exited per second
+            measurementStartTime: 30, // Time (seconds from game start) when we start measuring steady state
+            measurementDuration: 30,  // Measure over 30 seconds after initial spawn period
+            spawnedDuringMeasurement: 0,
+            exitedDuringMeasurement: 0,
+            eliminatedDuringMeasurement: 0
+        };
+        
         // Input
         this.touchActive = false;
         this.touchX = 0;
@@ -152,6 +166,15 @@ class Game {
         const hitNPCs = this.attack.use(this.touchX, this.touchY, this.npcs, this.physicsWorld);
         
         if (hitNPCs) {
+            // Track eliminations
+            this.metrics.totalEliminated += hitNPCs.length;
+            
+            // Track eliminations during measurement period
+            if (this.time >= this.metrics.measurementStartTime && 
+                this.time < this.metrics.measurementStartTime + this.metrics.measurementDuration) {
+                this.metrics.eliminatedDuringMeasurement += hitNPCs.length;
+            }
+            
             // Calculate score changes
             for (const npc of hitNPCs) {
                 if (npc.type === 'bad') {
@@ -179,6 +202,20 @@ class Game {
         this.trains = [];
         this.npcs = [];
         this.lastTime = performance.now();
+        
+        // Reset metrics
+        this.metrics = {
+            totalSpawned: 0,
+            totalExited: 0,
+            totalEliminated: 0,
+            spawnRate: 0,
+            exitRate: 0,
+            measurementStartTime: 30, // Start measuring after 30 seconds (allow time for NPCs to reach escalator)
+            measurementDuration: 30,
+            spawnedDuringMeasurement: 0,
+            exitedDuringMeasurement: 0,
+            eliminatedDuringMeasurement: 0
+        };
         
         // Spawn first train immediately
         this.spawnTrain();
@@ -218,6 +255,34 @@ class Game {
             return;
         }
         
+        // Log metrics at end of measurement period (once)
+        const measurementEndTime = this.metrics.measurementStartTime + this.metrics.measurementDuration;
+        if (this.time >= measurementEndTime && this.time - deltaTime < measurementEndTime) {
+            // Calculate rates
+            this.metrics.spawnRate = this.metrics.spawnedDuringMeasurement / this.metrics.measurementDuration;
+            this.metrics.exitRate = this.metrics.exitedDuringMeasurement / this.metrics.measurementDuration;
+            const eliminationRate = this.metrics.eliminatedDuringMeasurement / this.metrics.measurementDuration;
+            
+            // Count NPCs by state
+            const stateCount = { walking: 0, queuing: 0, exiting: 0 };
+            this.npcs.forEach(npc => {
+                if (npc.active) stateCount[npc.state]++;
+            });
+            
+            console.log('=== NPC Throughput Metrics (Steady State) ===');
+            console.log(`Measurement period: ${this.metrics.measurementStartTime}s - ${measurementEndTime}s`);
+            console.log(`Total spawned: ${this.metrics.totalSpawned} NPCs`);
+            console.log(`During measurement: ${this.metrics.spawnedDuringMeasurement} spawned, ${this.metrics.exitedDuringMeasurement} exited, ${this.metrics.eliminatedDuringMeasurement} eliminated`);
+            console.log(`Spawn rate: ${this.metrics.spawnRate.toFixed(2)} NPCs/s`);
+            console.log(`Exit rate: ${this.metrics.exitRate.toFixed(2)} NPCs/s`);
+            console.log(`Elimination rate: ${eliminationRate.toFixed(2)} NPCs/s`);
+            console.log(`Total accounted: ${(this.metrics.exitRate + eliminationRate).toFixed(2)} NPCs/s`);
+            console.log(`Balance: ${(this.metrics.exitRate + eliminationRate - this.metrics.spawnRate).toFixed(2)} NPCs/s (should be close to 0 for steady state)`);
+            console.log(`Current NPC count: ${this.npcs.length} (walking: ${stateCount.walking}, queuing: ${stateCount.queuing}, exiting: ${stateCount.exiting})`);
+            console.log(`Escalator queue length: ${this.escalators.map(e => e.queue.length).join(', ')}`);
+            console.log('==========================================');
+        }
+        
         // Update physics world
         if (this.physicsWorld) {
             this.physicsWorld.update(deltaTime);
@@ -238,7 +303,16 @@ class Game {
             
             // Get passengers from stopped trains
             const passengers = train.getPassengers();
-            this.npcs.push(...passengers);
+            if (passengers.length > 0) {
+                this.npcs.push(...passengers);
+                this.metrics.totalSpawned += passengers.length;
+                
+                // Track spawns during measurement period
+                if (this.time >= this.metrics.measurementStartTime && 
+                    this.time < this.metrics.measurementStartTime + this.metrics.measurementDuration) {
+                    this.metrics.spawnedDuringMeasurement += passengers.length;
+                }
+            }
             
             return train.active;
         });
@@ -248,6 +322,14 @@ class Game {
             
             // Check if NPC exited
             if (!npc.active && npc.state === 'exiting') {
+                this.metrics.totalExited++;
+                
+                // Track exits during measurement period
+                if (this.time >= this.metrics.measurementStartTime && 
+                    this.time < this.metrics.measurementStartTime + this.metrics.measurementDuration) {
+                    this.metrics.exitedDuringMeasurement++;
+                }
+                
                 if (npc.type === 'good') {
                     this.score += 5; // Good NPC exited safely
                 } else {
