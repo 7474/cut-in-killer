@@ -2,11 +2,15 @@
 
 class NPC extends Entity {
     constructor(x, y, type = 'good', physicsWorld = null) {
+        // Constants for fallback positions
+        const DEFAULT_SPAWN_X = 300;
+        const DEFAULT_SPAWN_Y = 400;
+        
         // Validate position
         if (!isFinite(x) || !isFinite(y)) {
             console.error(`NPC created with invalid position: x=${x}, y=${y}`);
-            x = 300; // Default fallback position
-            y = 400;
+            x = DEFAULT_SPAWN_X;
+            y = DEFAULT_SPAWN_Y;
         }
         
         super(x, y);
@@ -42,6 +46,8 @@ class NPC extends Entity {
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
         this.PERSONAL_SPACE = 30; // Minimum distance to maintain from others - increased for more breathing room
         this.REPULSION_STRENGTH = type === 'good' ? 50 : 30; // Gentler repulsion for stability
+        this.MAX_AVOIDANCE_VELOCITY = 5; // Maximum velocity adjustment for crowd avoidance (px/s)
+        this.CUT_IN_PUSH_STRENGTH = 3; // Velocity push strength for bad NPCs cutting in (px/s)
         this.CUT_IN_FORCE_MULTIPLIER = 0.003; // Force multiplier for cut-in behavior - subtle but noticeable
         this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
         
@@ -205,7 +211,7 @@ class NPC extends Entity {
                 const normalizedDy = dy / dist;
                 
                 // Gently adjust velocity to avoid collision
-                const avoidanceStrength = (this.PERSONAL_SPACE - dist) / this.PERSONAL_SPACE * 5; // Max 5 px/s adjustment
+                const avoidanceStrength = (this.PERSONAL_SPACE - dist) / this.PERSONAL_SPACE * this.MAX_AVOIDANCE_VELOCITY;
                 
                 if (typeof Matter !== 'undefined') {
                     const currentVel = this.physicsBody.velocity;
@@ -266,11 +272,10 @@ class NPC extends Entity {
                 const dx = npc.x - this.x;
                 const dy = npc.y - this.y;
                 if (dist > 0) {
-                    const pushStrength = 3; // Gentle push of 3 px/s
                     const currentVel = npc.physicsBody.velocity;
                     Matter.Body.setVelocity(npc.physicsBody, {
-                        x: currentVel.x + (dx / dist) * pushStrength,
-                        y: currentVel.y + (dy / dist) * pushStrength
+                        x: currentVel.x + (dx / dist) * this.CUT_IN_PUSH_STRENGTH,
+                        y: currentVel.y + (dy / dist) * this.CUT_IN_PUSH_STRENGTH
                     });
                 }
             }

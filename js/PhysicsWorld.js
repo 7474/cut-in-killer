@@ -14,6 +14,8 @@ class PhysicsWorld {
         this.REPULSION_DISTANCE_THRESHOLD = 100; // Distance threshold for repulsion force
         this.MOVE_FORCE_MULTIPLIER = 0.1; // Reduced force multiplier to prevent physics explosions
         this.MIN_DISTANCE_THRESHOLD = 1; // Minimum distance to prevent division by zero
+        this.MAX_REPULSION_FORCE = 0.01; // Maximum force cap for stability
+        this.VELOCITY_DAMPING_FACTOR = 0.98; // Per-frame velocity damping (reduces by 2%)
         
         // Create Matter.js engine
         this.engine = Matter.Engine.create({
@@ -228,8 +230,7 @@ class PhysicsWorld {
             const force = strength / (clampedDist * clampedDist); // Inverse square law
             
             // Clamp the force to prevent excessive values
-            const maxForce = 0.01; // Maximum force cap for stability
-            const clampedForce = Math.min(force, maxForce);
+            const clampedForce = Math.min(force, this.MAX_REPULSION_FORCE);
             
             const fx = (dx / dist) * clampedForce * body1.mass;
             const fy = (dy / dist) * clampedForce * body1.mass;
@@ -273,10 +274,9 @@ class PhysicsWorld {
             
             // Additional velocity damping - gradually reduce velocity each frame
             if (speed > 0) {
-                const dampingFactor = 0.98; // Reduces velocity by 2% per frame
                 Matter.Body.setVelocity(body, {
-                    x: body.velocity.x * dampingFactor,
-                    y: body.velocity.y * dampingFactor
+                    x: body.velocity.x * this.VELOCITY_DAMPING_FACTOR,
+                    y: body.velocity.y * this.VELOCITY_DAMPING_FACTOR
                 });
             }
             
