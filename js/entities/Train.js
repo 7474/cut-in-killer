@@ -44,10 +44,10 @@ class Train extends Entity {
     }
 
     generatePassengers(physicsWorld = null) {
-        const count = Utils.randomInt(5, 15);
+        const count = Utils.randomInt(3, 6); // Further reduced for stability - fewer NPCs per train
         const goodRatio = Utils.randomFloat(0.5, 0.8); // 50-80% good NPCs
         
-        // Calculate all door positions
+        // Calculate all door positions - use targetY (stopped position) to ensure valid spawn points
         const doorPositions = this.getDoorPositions();
         
         for (let i = 0; i < count; i++) {
@@ -57,10 +57,23 @@ class Train extends Entity {
             const doorPos = doorPositions[Math.floor(Math.random() * doorPositions.length)];
             
             // NPCs spawn on the platform (to the right of the train when train stops)
-            // Position them near the selected door with slight horizontal spread
-            const platformOffset = this.width / 2 + this.DOOR_CLEARANCE;
-            const horizontalSpread = Utils.randomFloat(0, 30); // Add 0-30 pixels horizontal spread
-            const npc = new NPC(this.x + platformOffset + horizontalSpread, doorPos, type, physicsWorld);
+            // Position them with significant horizontal spread to avoid overlapping spawns
+            const platformOffset = this.width / 2 + this.DOOR_CLEARANCE + 20; // Extra base offset
+            const horizontalSpread = i * 25 + Utils.randomFloat(0, 15); // Progressive spread + randomness
+            const verticalJitter = Utils.randomFloat(-10, 10); // Vertical jitter to spread out
+            
+            const npc = new NPC(
+                this.x + platformOffset + horizontalSpread, 
+                doorPos + verticalJitter, 
+                type, 
+                physicsWorld
+            );
+            
+            // Ensure NPC starts with zero velocity for stability
+            if (npc.physicsBody && typeof Matter !== 'undefined') {
+                Matter.Body.setVelocity(npc.physicsBody, { x: 0, y: 0 });
+            }
+            
             this.passengers.push(npc);
         }
     }

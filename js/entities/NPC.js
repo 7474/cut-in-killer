@@ -2,11 +2,31 @@
 
 class NPC extends Entity {
     constructor(x, y, type = 'good', physicsWorld = null) {
+        // Constants for fallback positions
+        const DEFAULT_SPAWN_X = 300;
+        const DEFAULT_SPAWN_Y = 400;
+        
+        // Validate position
+        if (!isFinite(x) || !isFinite(y)) {
+            console.error(`NPC created with invalid position: x=${x}, y=${y}`);
+            x = DEFAULT_SPAWN_X;
+            y = DEFAULT_SPAWN_Y;
+        }
+        
         super(x, y);
         this.type = type; // 'good' or 'bad'
         this.width = 15;
         this.height = 15;
-        this.speed = type === 'good' ? 18 : 25; // bad NPCs move faster - realistic human walking speeds
+        
+        // Speed calculation based on real-world scale:
+        // Train car length: 60px ≈ 20m → 3px ≈ 1m
+        // Real walking speed: 1.2-1.8 m/s (normal), 1.8-2.5 m/s (rushing/bad behavior)
+        // Game scale: multiply by 3 (px/m) and add gameplay multiplier of 1.5x for better pacing
+        // Result: 5-8 px/s (good), 8-11 px/s (bad)
+        this.speed = type === 'good' ? 
+            Utils.randomFloat(5, 8) :    // Good NPCs: varied normal walking pace
+            Utils.randomFloat(8, 11);     // Bad NPCs: varied rushing pace
+        // Each NPC has individual speed variation for natural crowd dynamics
         this.state = 'walking'; // walking, queuing, exiting
         this.target = null;
         this.queuePosition = null;
@@ -27,20 +47,22 @@ class NPC extends Entity {
         this.QUEUE_DISTANCE = 25; // Distance between NPCs in queue line
         this.QUEUE_WIDTH = 40; // Width of queue area on each side of escalator
         this.GAP_CLOSE_THRESHOLD = 35; // Distance threshold to detect a gap ahead
-        this.GAP_CLOSE_SPEED = 15; // Speed at which NPCs close gaps in the queue - slower and more natural
+        this.GAP_CLOSE_SPEED = this.speed * 0.8; // Speed at which NPCs close gaps - slightly slower than walking speed
         this.FADE_DURATION = 0.5; // Duration of fade-out animation in seconds
         this.ENTRANCE_TARGET_OFFSET = 40; // Distance below escalator to target for entrance approach
         
         // Physics-based movement
         this.MOVE_FORCE_MULTIPLIER = type === 'bad' ? 0.8 : 0.5; // Bad NPCs push harder
-        this.PERSONAL_SPACE = 25; // Minimum distance to maintain from others
-        this.REPULSION_STRENGTH = type === 'good' ? 30 : 15; // Good NPCs avoid more, significantly reduced to prevent physics instability with slower speeds
-        this.CUT_IN_FORCE_MULTIPLIER = 0.002; // Force multiplier for cut-in behavior
+        this.PERSONAL_SPACE = 30; // Minimum distance to maintain from others - increased for more breathing room
+        this.REPULSION_STRENGTH = type === 'good' ? 50 : 30; // Gentler repulsion for stability
+        this.MAX_AVOIDANCE_VELOCITY = 5; // Maximum velocity adjustment for crowd avoidance (px/s)
+        this.CUT_IN_PUSH_STRENGTH = 3; // Velocity push strength for bad NPCs cutting in (px/s)
+        this.CUT_IN_FORCE_MULTIPLIER = 0.003; // Force multiplier for cut-in behavior - subtle but noticeable
         this.CUT_IN_DISTANCE_THRESHOLD = 40; // Distance threshold for cut-in attempts
         
         // Spawn protection to prevent physics explosion
         this.spawnTime = 0;
-        this.SPAWN_PROTECTION_DURATION = 0.5; // Don't apply repulsion for first 0.5 seconds
+        this.SPAWN_PROTECTION_DURATION = 1.0; // Don't apply repulsion for first 1 second - increased for stability
         
         // Initialize physics body
         if (physicsWorld) {
@@ -54,18 +76,20 @@ class NPC extends Entity {
             this.physicsBody = physicsWorld.createCircleBody(
                 this.x, this.y, this.width / 2,
                 {
-                    frictionAir: 0.2, // Moderate damping for smooth human-like movement
+                    frictionAir: 0.2, // Increased damping for more stable movement
                     density: this.type === 'bad' ? 0.0015 : 0.001, // Bad NPCs are "heavier"
-                    restitution: 0.2
+                    restitution: 0.1, // Lower bounce to reduce collision energy
+                    friction: 0.3 // Higher friction for stability
                 }
             );
         } else {
             this.physicsBody = physicsWorld.createRectangleBody(
                 this.x, this.y, this.width, this.height,
                 {
-                    frictionAir: 0.2, // Moderate damping for smooth human-like movement
+                    frictionAir: 0.2, // Increased damping for more stable movement
                     density: this.type === 'bad' ? 0.0015 : 0.001,
-                    restitution: 0.2
+                    restitution: 0.1, // Lower bounce to reduce collision energy
+                    friction: 0.3 // Higher friction for stability
                 }
             );
         }
@@ -175,6 +199,9 @@ class NPC extends Entity {
         // Skip crowd avoidance during spawn protection period
         if (this.spawnTime < this.SPAWN_PROTECTION_DURATION) return;
         
+        // Don't apply repulsion when in queue - let queue management handle it
+        if (this.state === 'queuing') return;
+        
         for (const npc of npcs) {
             if (npc === this || !npc.active || !npc.physicsBody) continue;
             if (npc.state !== 'walking') continue;
@@ -184,13 +211,24 @@ class NPC extends Entity {
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
-            // Apply repulsion if too close
-            if (dist < this.PERSONAL_SPACE) {
-                physicsWorld.applyRepulsion(
-                    this.physicsBody,
-                    npc.physicsBody,
-                    this.REPULSION_STRENGTH
-                );
+            // Apply gentle velocity adjustment if too close
+            if (dist < this.PERSONAL_SPACE && dist > 1) {
+                // Calculate avoidance direction
+                const dx = this.x - npc.x;
+                const dy = this.y - npc.y;
+                const normalizedDx = dx / dist;
+                const normalizedDy = dy / dist;
+                
+                // Gently adjust velocity to avoid collision
+                const avoidanceStrength = (this.PERSONAL_SPACE - dist) / this.PERSONAL_SPACE * this.MAX_AVOIDANCE_VELOCITY;
+                
+                if (typeof Matter !== 'undefined') {
+                    const currentVel = this.physicsBody.velocity;
+                    Matter.Body.setVelocity(this.physicsBody, {
+                        x: currentVel.x + normalizedDx * avoidanceStrength,
+                        y: currentVel.y + normalizedDy * avoidanceStrength
+                    });
+                }
             }
         }
     }
@@ -232,22 +270,22 @@ class NPC extends Entity {
         if (!this.physicsBody || !physicsWorld) return;
         if (typeof Matter === 'undefined') return;
         
-        // Bad NPCs apply pushing force to nearby good NPCs
+        // Bad NPCs apply gentle pushing to nearby good NPCs
         for (const npc of npcs) {
             if (npc === this || !npc.active || !npc.physicsBody) continue;
             
             const dist = Utils.distance(this.x, this.y, npc.x, npc.y);
             
             if (npc.type === 'good' && dist < this.CUT_IN_DISTANCE_THRESHOLD) {
-                // Push the good NPC
+                // Gently push the good NPC aside using velocity adjustment
                 const dx = npc.x - this.x;
                 const dy = npc.y - this.y;
                 if (dist > 0) {
-                    const pushForce = {
-                        x: (dx / dist) * this.CUT_IN_FORCE_MULTIPLIER * this.physicsBody.mass,
-                        y: (dy / dist) * this.CUT_IN_FORCE_MULTIPLIER * this.physicsBody.mass
-                    };
-                    Matter.Body.applyForce(npc.physicsBody, npc.physicsBody.position, pushForce);
+                    const currentVel = npc.physicsBody.velocity;
+                    Matter.Body.setVelocity(npc.physicsBody, {
+                        x: currentVel.x + (dx / dist) * this.CUT_IN_PUSH_STRENGTH,
+                        y: currentVel.y + (dy / dist) * this.CUT_IN_PUSH_STRENGTH
+                    });
                 }
             }
         }
