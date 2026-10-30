@@ -223,18 +223,38 @@ class Game {
 
     // ---- プレイヤーの操作 ----
 
+    // 指の下付近に迷惑客がいればそちらを優先する。
+    // 善良な客は体の真上をタップしたときだけ当たる（誤爆しにくくする）
     pickMob(x, y, radius) {
-        let best = null;
-        let bestD = radius;
+        let bad = null;
+        let badD = radius;
+        let good = null;
+        let goodD = CK.MOB_RADIUS + 3;
         for (const m of this.mobs) {
-            if (!m.alive || !m.grounded) continue;
+            if (!m.alive || !(m.grounded || m.state === 'riding')) continue;
             const d = U.dist(x, y, m.x, m.y);
-            if (d < bestD) {
-                bestD = d;
-                best = m;
+            if (m.bad && d < badD) {
+                badD = d;
+                bad = m;
+            } else if (!m.bad && d < goodD) {
+                goodD = d;
+                good = m;
             }
         }
-        return best;
+        return bad || good;
+    }
+
+    // はじいた迷惑客の周囲にいる迷惑客もまとめて吹き飛ばす
+    shockwave(mob, dx, dy, speed) {
+        for (const m of this.mobs) {
+            if (m === mob || !m.bad || !m.alive || !(m.grounded || m.state === 'riding')) continue;
+            const ox = m.x - mob.x;
+            const oy = m.y - mob.y;
+            const d = Math.hypot(ox, oy);
+            if (d > CK.SHOCKWAVE_RADIUS) continue;
+            this.launch(m, dx + ox / (d || 1) * 0.8, dy + oy / (d || 1) * 0.8, speed * 0.9, 'chain');
+        }
+        this.effects.ring(mob.x, mob.y, 'rgba(255,214,102,0.9)', CK.SHOCKWAVE_RADIUS + 10, 0.3);
     }
 
     tap(x, y) {
@@ -257,7 +277,8 @@ class Game {
             dx += ox / od * 0.6;
             dy += oy / od * 0.6;
         }
-        this.launch(mob, dx, dy, 400, 'tap');
+        this.launch(mob, dx, dy, CK.TAP_SPEED, 'tap');
+        if (mob.bad) this.shockwave(mob, dx, dy, CK.TAP_SPEED);
     }
 
     swipe(x0, y0, x1, y1, ms) {
@@ -268,9 +289,9 @@ class Game {
             // スワイプの軌跡に最初に触れたモブ
             let bestT = Infinity;
             for (const m of this.mobs) {
-                if (!m.alive || !m.grounded) continue;
+                if (!m.alive || !(m.grounded || m.state === 'riding')) continue;
                 const ps = U.pointSegment(m.x, m.y, x0, y0, x1, y1);
-                if (ps.d < 14 && ps.t < bestT) {
+                if (ps.d < (m.bad ? 22 : 10) && ps.t < bestT) {
                     bestT = ps.t;
                     mob = m;
                 }
@@ -278,8 +299,9 @@ class Game {
         }
         Sound.play('swish');
         if (!mob) return;
-        const speed = U.clamp(len / Math.max(ms, 16) * 1000 * 0.9, 380, 1000);
+        const speed = U.clamp(len / Math.max(ms, 16) * 1000 * 0.9, 480, 1100);
         this.launch(mob, x1 - x0, y1 - y0, speed, 'swipe');
+        if (mob.bad) this.shockwave(mob, x1 - x0, y1 - y0, speed);
     }
 
     nearestTrack(x) {
@@ -318,16 +340,20 @@ class Game {
             this.combo++;
             this.comboTimer = CK.COMBO_WINDOW;
             this.stats.maxCombo = Math.max(this.stats.maxCombo, this.combo);
-            let pts = CK.SCORE.KO * (1 + 0.5 * (this.combo - 1));
+            let pts = CK.SCORE.KO * Math.min(5, 1 + 0.25 * (this.combo - 1));
             if (cause === 'chain') pts += CK.SCORE.CHAIN;
             if (wasState === 'queued') pts += 20;
             this.addScore(pts);
-            fx.burst(mob.x, mob.y, mob.color, 14, 220);
-            fx.ring(mob.x, mob.y, '#ffffff', 34);
-            fx.text(mob.x, mob.y - 18, cause === 'chain' ? `連鎖！+${Math.round(pts)}` : `+${Math.round(pts)}`, cause === 'chain' ? '#ffd166' : '#ffffff', cause === 'chain' ? 15 : 14);
-            if (this.combo >= 2) fx.text(mob.x, mob.y - 34, `${this.combo} COMBO`, '#ffd166', 12);
-            fx.shake(cause === 'chain' ? 4 : 6);
-            fx.stop(0.05);
+            this.changeOrder(CK.ORDER.KO);
+            fx.burst(mob.x, mob.y, mob.color, 22, 280);
+            fx.burst(mob.x, mob.y, '#ffd166', 6, 200);
+            fx.ring(mob.x, mob.y, '#ffffff', 44);
+            const size = Math.min(26, 15 + this.combo);
+            fx.text(mob.x + U.rand(-8, 8), mob.y - 18 - U.rand(0, 12), cause === 'chain' ? `連鎖！+${Math.round(pts)}` : `+${Math.round(pts)}`, cause === 'chain' ? '#ffd166' : '#ffffff', size);
+            const praise = CK.COMBO_PRAISE[this.combo];
+            if (praise && !this.demo) fx.banner(praise, '#ffd166', 1.2, 300, 28);
+            fx.shake(cause === 'chain' ? 6 : 9);
+            fx.stop(cause === 'chain' ? 0.04 : 0.08);
             Sound.play(cause === 'chain' ? 'chain' : 'hit');
             if (navigator.vibrate && !this.demo) {
                 try { navigator.vibrate(18); } catch (e) { /* 非対応端末 */ }
@@ -582,7 +608,6 @@ class Game {
                     m.vy = f.vy * 0.2;
                     m.angry = 2;
                     if (!this.demo) {
-                        this.changeOrder(CK.ORDER.COLLATERAL);
                         this.effects.text(m.x, m.y - 14, 'とばっちり', '#9fb3c8', 11);
                     }
                     f.vx *= 0.6;

@@ -7,22 +7,25 @@ CK.W = 360;
 CK.H = 640;
 
 CK.MOB_RADIUS = 7.5;
-CK.TAP_RADIUS = 22;
+CK.TAP_RADIUS = 30;
+CK.TAP_SPEED = 520;
+CK.SHOCKWAVE_RADIUS = 34;
 CK.SWIPE_GRAB_RADIUS = 26;
 CK.QUEUE_SPACING = 15;
-CK.COMBO_WINDOW = 2.5;
+CK.COMBO_WINDOW = 3.5;
+CK.COMBO_PRAISE = { 5: 'ナイス！', 10: '絶好調！', 20: '駅の守護神！', 30: '伝説の駅員！' };
 
 // 平穏度（ライフ）の増減
 CK.ORDER = {
     MAX: 100,
-    CUT_IN: -3,          // 割り込みが列に入った瞬間
-    BAD_ESCAPE: -8,      // 迷惑客がそのまま出ていった／乗っていった
-    DOOR_RUSH: -5,       // 降りる人より先に乗り込んだ
-    BUMP: -2,            // 歩きスマホが人にぶつかって転ばせた
-    MISFIRE: -10,        // 善良な客をはじき飛ばしてしまった
-    COLLATERAL: -1,      // 飛ばした迷惑客が善良な客を巻き込んだ
-    GOOD_EXIT: 0.6,      // 善良な客が無事に改札へ
-    CROWD_DRAIN: 3       // 混雑超過時の毎秒減少量
+    CUT_IN: -1,          // 割り込みが列に入った瞬間
+    BAD_ESCAPE: -5,      // 迷惑客がそのまま出ていった／乗っていった
+    DOOR_RUSH: -2,       // 降りる人より先に乗り込んだ
+    BUMP: -1,            // 歩きスマホが人にぶつかって転ばせた
+    MISFIRE: -4,         // 善良な客をはじき飛ばしてしまった
+    KO: 2,               // 迷惑客を排除すると少し回復
+    GOOD_EXIT: 0.5,      // 善良な客が無事に改札へ
+    CROWD_DRAIN: 1.5    // 混雑超過時の毎秒減少量
 };
 
 CK.SCORE = {
@@ -33,13 +36,13 @@ CK.SCORE = {
     TRACK: 50,
     WALL: 30,
     TRAIN_CARRY: 200,
-    MISFIRE: -150,
+    MISFIRE: -50,
     BAD_ESCAPE: -50
 };
 
 // 迷惑客の種類
 CK.BAD_TYPES = {
-    cutter: { label: '割り込み客', color: '#e4572e', speed: [84, 96], mass: 5 },
+    cutter: { label: '割り込み客', color: '#e4572e', speed: [70, 80], mass: 5 },
     phone: { label: '歩きスマホ', color: '#8e6cc9', speed: [18, 24], mass: 1.4 },
     blocker: { label: 'ドア前陣取り', color: '#b5835a', speed: [40, 48], mass: 8 }
 };
@@ -62,13 +65,13 @@ CK.STAGES = [
         ],
         doors: [205, 315, 425, 535],
         alightPerDoor: [3, 6],
-        badRatio: [0.14, 0.28],
+        badRatio: [0.22, 0.4],
         badMix: { cutter: 1 },
         boarderRate: 0.25,
         blockerRatio: 0,
         laneInterval: 1.15,
         crowdCap: 45,
-        ranks: [7000, 4500, 2000]
+        ranks: [13000, 8000, 4000]
     },
     {
         id: 'shibuya',
@@ -84,13 +87,13 @@ CK.STAGES = [
         ],
         doors: [205, 315, 425, 535],
         alightPerDoor: [3, 5],
-        badRatio: [0.16, 0.3],
+        badRatio: [0.25, 0.42],
         badMix: { cutter: 0.6, phone: 0.4 },
         boarderRate: 0.45,
         blockerRatio: 0.18,
         laneInterval: 1.0,
         crowdCap: 55,
-        ranks: [14000, 9000, 4000]
+        ranks: [30000, 18000, 9000]
     },
     {
         id: 'tokyo',
@@ -106,13 +109,13 @@ CK.STAGES = [
         ],
         doors: [205, 315, 425, 535],
         alightPerDoor: [3, 6],
-        badRatio: [0.18, 0.32],
+        badRatio: [0.28, 0.45],
         badMix: { cutter: 0.5, phone: 0.5 },
         boarderRate: 0.5,
         blockerRatio: 0.2,
         laneInterval: 1.3,
         crowdCap: 60,
-        ranks: [20000, 13000, 6000]
+        ranks: [32000, 22000, 11000]
     }
 ];
 
