@@ -2,83 +2,89 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#23272e">
+    <meta name="description" content="駅のホームで割り込む迷惑客をはじき飛ばし、行儀の良い乗客を無事に改札へ送り出すカジュアルゲーム">
     <title>Cut-in Killer - カットインキラー</title>
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
     <div id="game-container">
-        <canvas id="game-canvas"></canvas>
-        <div id="menu-screen" class="screen active">
-            <h1>Cut-in Killer</h1>
-            <p>割り込みを阻止せよ！</p>
-            <div id="map-selection">
-                <h2>マップ選択</h2>
-                <div id="map-list"></div>
-            </div>
-            <div id="attack-selection">
-                <h2>攻撃タイプ</h2>
-                <div id="attack-list">
-                    <button class="attack-btn" data-attack="bodyslam">体当たり</button>
-                    <button class="attack-btn" data-attack="laser">レーザービーム</button>
-                    <button class="attack-btn" data-attack="bomb">爆撃</button>
-                </div>
-            </div>
-            <button id="start-btn" class="primary-btn">スタート</button>
-            <div class="menu-footer">
-                <a href="https://github.com/7474/cut-in-killer" target="_blank" rel="noopener noreferrer" class="github-link">
-                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                        <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-                    </svg>
-                    GitHub
-                </a>
-            </div>
+        <div id="stage-wrap">
+            <canvas id="game-canvas"></canvas>
+            <button id="pause-btn" aria-label="一時停止">II</button>
         </div>
-        <div id="game-screen" class="screen">
-            <div id="hud">
-                <div class="hud-item">
-                    <span class="hud-label">スコア:</span>
-                    <span id="score">0</span>
-                </div>
-                <div class="hud-item">
-                    <span class="hud-label">時間:</span>
-                    <span id="timer">0</span>
-                </div>
-                <div class="hud-item">
-                    <span class="hud-label">攻撃:</span>
-                    <span id="current-attack">-</span>
-                </div>
-            </div>
 
-        </div>
-        <div id="gameover-screen" class="screen">
-            <h1>ゲームオーバー</h1>
-            <div class="result">
-                <p>最終スコア: <span id="final-score">0</span></p>
-                <p id="highscore-msg"></p>
+        <section id="title-screen" class="screen">
+            <div class="panel">
+                <h1 class="logo">Cut-in<br>Killer</h1>
+                <p class="tagline">割り込む奴らを はじき飛ばせ！</p>
+                <div id="stage-list"></div>
+                <div class="row">
+                    <button id="howto-btn" class="sub-btn">遊び方</button>
+                    <button id="sound-btn" class="sub-btn">サウンド</button>
+                </div>
+                <a class="repo-link" href="https://github.com/7474/cut-in-killer" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
-            <button id="restart-btn" class="primary-btn">もう一度</button>
-            <button id="menu-btn" class="secondary-btn">メニュー</button>
-        </div>
+        </section>
+
+        <section id="howto-screen" class="screen">
+            <div class="panel howto">
+                <h2>遊び方</h2>
+                <p>都心の駅ホーム。列車が着くたびに大勢の乗客が降り、エスカレーターに並びます。あなたの仕事は、<b>行儀の悪い迷惑客をはじき飛ばし</b>、行儀の良い乗客を無事に改札へ送り出すこと。</p>
+                <h3>操作（指 1 本）</h3>
+                <ul>
+                    <li><b>タップ</b>：近くの線路のほうへはじき飛ばす</li>
+                    <li><b>スワイプ</b>：指を払った方向へ思い切り飛ばす。他の迷惑客に当てると<b>連鎖</b></li>
+                    <li>走ってくる列車にぶつけると<b>お持ち帰り</b>で大量得点</li>
+                </ul>
+                <h3>迷惑客</h3>
+                <ul class="legend">
+                    <li><i class="dot" style="background:#e4572e"></i><span><b>割り込み客</b>：列の先頭に横から割り込む。赤く光って突進中</span></li>
+                    <li><i class="dot" style="background:#8e6cc9;box-shadow:0 0 0 3px rgba(125,249,255,.5)"></i><span><b>歩きスマホ</b>：ふらふら歩いて人にぶつかり転ばせる</span></li>
+                    <li><i class="dot" style="background:#b5835a;border-right:4px solid #4e3b2c"></i><span><b>ドア前陣取り</b>：大きなリュックでドアをふさぎ、降りる人より先に乗る</span></li>
+                </ul>
+                <h3>失敗</h3>
+                <p>迷惑客に逃げ切られる・割り込まれる・善良な乗客を誤爆する・ホームが混雑しすぎると「ホームの平穏」が減ります。ゼロになると終了。時間いっぱい守り切ればクリアです。</p>
+                <button id="howto-close" class="main-btn">わかった</button>
+            </div>
+        </section>
+
+        <section id="pause-screen" class="screen">
+            <div class="panel">
+                <h2>一時停止</h2>
+                <button id="resume-btn" class="main-btn">つづける</button>
+                <button id="quit-btn" class="sub-btn wide">タイトルへ</button>
+            </div>
+        </section>
+
+        <section id="result-screen" class="screen">
+            <div class="panel">
+                <p id="result-stage" class="result-stage"></p>
+                <h2 id="result-title"></h2>
+                <div class="result-score">
+                    <span id="result-score">0</span>
+                    <span id="result-rank" class="rank big"></span>
+                </div>
+                <p id="result-best" class="result-best"></p>
+                <table id="result-stats"></table>
+                <button id="next-btn" class="main-btn">次の駅へ</button>
+                <button id="retry-btn" class="sub-btn wide">もう一度</button>
+                <button id="title-btn" class="sub-btn wide">タイトルへ</button>
+            </div>
+        </section>
     </div>
-    
-    <script src="js/matter.min.js"></script>
-    <script src="js/PhysicsWorld.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/storage.js"></script>
-    <script src="js/entities/Entity.js"></script>
-    <script src="js/entities/NPC.js"></script>
-    <script src="js/entities/Train.js"></script>
-    <script src="js/entities/Platform.js"></script>
-    <script src="js/entities/Escalator.js"></script>
-    <script src="js/attacks/Attack.js"></script>
-    <script src="js/attacks/BodySlam.js"></script>
-    <script src="js/attacks/Laser.js"></script>
-    <script src="js/attacks/Bomb.js"></script>
-    <script src="js/maps.js"></script>
+
+    <script src="js/config.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/station.js"></script>
+    <script src="js/mob.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/render.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
