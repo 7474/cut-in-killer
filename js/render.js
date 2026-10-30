@@ -361,6 +361,17 @@ class Renderer {
         const s = m.scale * (1 + Math.min(m.z, 120) / 160);
         ctx.scale(s, s);
 
+        // 迷惑客は足元に種類の色の輪を出して見つけやすくする
+        if (m.bad && (m.grounded || m.state === 'riding')) {
+            ctx.strokeStyle = m.color;
+            ctx.globalAlpha = U.clamp(m.alpha, 0, 1) * (0.55 + 0.25 * Math.sin(performance.now() / 150 + m.phase));
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.55, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = U.clamp(m.alpha, 0, 1);
+        }
+
         const lying = m.state === 'ko' || m.state === 'fallen';
         const tumbling = m.state === 'launched' || m.state === 'trackfall' || m.state === 'carried' || m.state === 'splat';
         ctx.save();
